@@ -160,6 +160,14 @@ settings.code_font_size_description: 文件编辑器、差分视图、代码块�
 settings.theme_system: 跟随系统
 settings.theme_light: 浅色
 settings.theme_dark: 深色
+settings.accent: 强调色
+settings.accent_description: 用于徽标、光标和实时活动的颜色
+settings.accent_red: 红色
+settings.accent_orange: 橙色
+settings.accent_green: 绿色
+settings.accent_blue: 蓝色
+settings.accent_purple: 紫色
+settings.accent_graphite: 石墨色
 input.do_anything: 做什么都可以…
 input.search_models: 搜索模型…
 input.search_branches: 搜索分支

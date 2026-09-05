@@ -164,6 +164,14 @@ settings.code_font_size_description: ファイルエディタ、差分表示、�
 settings.theme_system: システム
 settings.theme_light: ライト
 settings.theme_dark: ダーク
+settings.accent: アクセント
+settings.accent_description: ロゴ、カーソル、アクティビティ表示に使用する色
+settings.accent_red: レッド
+settings.accent_orange: オレンジ
+settings.accent_green: グリーン
+settings.accent_blue: ブルー
+settings.accent_purple: パープル
+settings.accent_graphite: グラファイト
 
 input.do_anything: 何でも依頼できます…
 input.search_models: モデルを検索…

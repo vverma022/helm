@@ -1,6 +1,6 @@
 use gpui::{App, Global, Hsla, Rems, Window, WindowAppearance, hsla, rems, rgb, transparent_black};
 
-pub use helm_client::theme::ThemePreference;
+pub use helm_client::theme::{AccentPreference, ThemePreference};
 
 /// Scaled pixels: a dimension authored at the default 14px UI font size,
 /// expressed in rems so the UI font size setting scales it. The window's rem
@@ -91,6 +91,14 @@ pub struct Theme {
 }
 
 impl Theme {
+    /// Override the decorative accent. Split from [`Self::dark`] and
+    /// [`Self::light`] so the palettes stay constructible without a
+    /// preference, which is what the markdown tests rely on.
+    pub fn with_accent(mut self, accent: AccentPreference) -> Self {
+        self.accent = rgb(accent.rgb(self.is_dark)).into();
+        self
+    }
+
     pub fn current(cx: &App) -> Self {
         if cx.has_global::<ActiveHelmTheme>() {
             cx.global::<ActiveHelmTheme>().0
@@ -102,38 +110,42 @@ impl Theme {
     pub fn dark() -> Self {
         Self {
             is_dark: true,
-            canvas: rgb(0x1A1A1A).into(),
+            canvas: if cfg!(target_os = "macos") {
+                hsla(0.0, 0.0, 0.055, 0.72)
+            } else {
+                rgb(0x0F0F10).into()
+            },
             sidebar: if cfg!(target_os = "macos") {
                 transparent_black()
             } else {
                 rgb(0x181818).into()
             },
-            sidebar_drag_background: rgb(0x181818).into(),
-            sidebar_item_background: hsla(0.0, 0.0, 0.941, 0.06),
-            surface: rgb(0x1A1A1A).into(),
-            raised: rgb(0x232323).into(),
-            composer: rgb(0x212121).into(),
-            inset: rgb(0x151515).into(),
-            terminal: rgb(0x151515).into(),
-            overlay: hsla(220.0 / 360.0, 0.10, 0.90, 0.05),
-            overlay_strong: hsla(220.0 / 360.0, 0.10, 0.90, 0.09),
+            sidebar_drag_background: rgb(0x0D0D0E).into(),
+            sidebar_item_background: hsla(0.0, 0.0, 0.95, 0.07),
+            surface: rgb(0x121213).into(),
+            raised: rgb(0x1B1B1D).into(),
+            composer: rgb(0x151517).into(),
+            inset: rgb(0x0A0A0B).into(),
+            terminal: rgb(0x0A0A0B).into(),
+            overlay: hsla(0.0, 0.0, 0.95, 0.05),
+            overlay_strong: hsla(0.0, 0.0, 0.95, 0.09),
 
-            border: hsla(220.0 / 360.0, 0.10, 0.90, 0.07),
-            border_strong: hsla(220.0 / 360.0, 0.10, 0.90, 0.14),
-            sidebar_border: hsla(126.93 / 360.0, 0.000_000_1, 0.16077, 1.0),
+            border: hsla(0.0, 0.0, 0.95, 0.06),
+            border_strong: hsla(0.0, 0.0, 0.95, 0.12),
+            sidebar_border: hsla(0.0, 0.0, 0.95, 0.07),
 
-            text: rgb(0xE2E2E2).into(),
-            text_secondary: rgb(0xA3A3A3).into(),
-            text_tertiary: rgb(0x7D7D7D).into(),
-            text_ghost: rgb(0x575757).into(),
+            text: rgb(0xEDEDED).into(),
+            text_secondary: rgb(0x9E9EA2).into(),
+            text_tertiary: rgb(0x727276).into(),
+            text_ghost: rgb(0x505055).into(),
 
-            accent: rgb(0xE2795B).into(),
+            accent: rgb(AccentPreference::Red.rgb(true)).into(),
             resize_handle: rgb(0x3B82F6).into(),
             gauge: rgb(0x3B82F6).into(),
 
             selection: hsla(211.0 / 360.0, 1.0, 0.50, 0.55),
             code_text: rgb(0xE0A882).into(),
-            code_wash: hsla(220.0 / 360.0, 0.10, 0.90, 0.08),
+            code_wash: hsla(0.0, 0.0, 0.95, 0.07),
 
             inverse: rgb(0xE7E9EC).into(),
             on_inverse: rgb(0x17181C).into(),
@@ -149,38 +161,42 @@ impl Theme {
     pub fn light() -> Self {
         Self {
             is_dark: false,
-            canvas: rgb(0xF6F5F6).into(),
+            canvas: if cfg!(target_os = "macos") {
+                hsla(0.0, 0.0, 0.99, 0.70)
+            } else {
+                rgb(0xFAFAFA).into()
+            },
             sidebar: if cfg!(target_os = "macos") {
                 transparent_black()
             } else {
                 rgb(0xF3F3F3).into()
             },
-            sidebar_drag_background: rgb(0xF3F3F3).into(),
-            sidebar_item_background: hsla(0.0, 0.0, 0.078, 0.06),
-            surface: rgb(0xF6F5F6).into(),
-            raised: rgb(0xECECEC).into(),
+            sidebar_drag_background: rgb(0xF4F4F5).into(),
+            sidebar_item_background: hsla(0.0, 0.0, 0.08, 0.07),
+            surface: rgb(0xFAFAFA).into(),
+            raised: rgb(0xF1F1F2).into(),
             composer: rgb(0xFFFFFF).into(),
-            inset: rgb(0xE6E6E6).into(),
+            inset: rgb(0xEDEDEE).into(),
             terminal: rgb(0xFFFFFF).into(),
-            overlay: hsla(220.0 / 360.0, 0.10, 0.12, 0.05),
-            overlay_strong: hsla(220.0 / 360.0, 0.10, 0.12, 0.09),
+            overlay: hsla(0.0, 0.0, 0.08, 0.05),
+            overlay_strong: hsla(0.0, 0.0, 0.08, 0.09),
 
-            border: hsla(220.0 / 360.0, 0.10, 0.12, 0.08),
-            border_strong: hsla(220.0 / 360.0, 0.10, 0.12, 0.15),
-            sidebar_border: hsla(0.0, 0.0, 0.078, 0.12),
+            border: hsla(0.0, 0.0, 0.08, 0.07),
+            border_strong: hsla(0.0, 0.0, 0.08, 0.13),
+            sidebar_border: hsla(0.0, 0.0, 0.08, 0.10),
 
-            text: rgb(0x242424).into(),
-            text_secondary: rgb(0x666666).into(),
-            text_tertiary: rgb(0x858585).into(),
-            text_ghost: rgb(0xA4A4A4).into(),
+            text: rgb(0x1C1C1E).into(),
+            text_secondary: rgb(0x5F5F63).into(),
+            text_tertiary: rgb(0x8A8A8E).into(),
+            text_ghost: rgb(0xADADB2).into(),
 
-            accent: rgb(0xC85F44).into(),
+            accent: rgb(AccentPreference::Red.rgb(false)).into(),
             resize_handle: rgb(0x2563EB).into(),
             gauge: rgb(0x2563EB).into(),
 
             selection: hsla(211.0 / 360.0, 1.0, 0.50, 0.35),
             code_text: rgb(0x9A5528).into(),
-            code_wash: hsla(220.0 / 360.0, 0.10, 0.12, 0.07),
+            code_wash: hsla(0.0, 0.0, 0.08, 0.06),
 
             inverse: rgb(0x202227).into(),
             on_inverse: rgb(0xF8F8F9).into(),
@@ -212,11 +228,17 @@ pub fn init(cx: &mut App) {
         Theme::dark()
     } else {
         Theme::light()
-    };
+    }
+    .with_accent(AccentPreference::default());
     set_active_theme(theme, cx);
 }
 
-pub fn apply_theme_preference(preference: ThemePreference, window: &mut Window, cx: &mut App) {
+pub fn apply_theme_preference(
+    preference: ThemePreference,
+    accent: AccentPreference,
+    window: &mut Window,
+    cx: &mut App,
+) {
     crate::platform::set_window_appearance(window, native_override(preference));
     let is_dark = resolves_to_dark(preference, cx.window_appearance());
     set_active_theme(
@@ -224,7 +246,8 @@ pub fn apply_theme_preference(preference: ThemePreference, window: &mut Window, 
             Theme::dark()
         } else {
             Theme::light()
-        },
+        }
+        .with_accent(accent),
         cx,
     );
     crate::platform::configure_sidebar_material(window, is_dark);

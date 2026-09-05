@@ -324,6 +324,22 @@ settings.theme_light:
   en: Light
 settings.theme_dark:
   en: Dark
+settings.accent:
+  en: Accent
+settings.accent_description:
+  en: Colour used for the logo, caret, and live activity
+settings.accent_red:
+  en: Red
+settings.accent_orange:
+  en: Orange
+settings.accent_green:
+  en: Green
+settings.accent_blue:
+  en: Blue
+settings.accent_purple:
+  en: Purple
+settings.accent_graphite:
+  en: Graphite
 
 input.do_anything:
   en: Do anything…

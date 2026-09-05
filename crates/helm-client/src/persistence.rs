@@ -22,7 +22,7 @@ use helm_protocol::model::{
     AgentSession, FavoriteModel, Project, ProviderKind, ProviderResumeCursor,
     ProviderSessionHistory, ProviderSessionSummary, RuntimeMode,
 };
-use helm_protocol::theme::ThemePreference;
+use helm_protocol::theme::{AccentPreference, ThemePreference};
 
 pub use helm_protocol::persistence::{
     ComposerDraft, ComposerDraftAttachment, ComposerDraftChange, ComposerDraftKey,
@@ -243,6 +243,7 @@ pub struct AppSettings {
     pub analytics_enabled: bool,
     pub favorite_models: Vec<FavoriteModel>,
     pub theme: ThemePreference,
+    pub accent: AccentPreference,
     pub language: AppLanguage,
     /// Base text size for the interface, in pixels: chrome and prose are
     /// authored against the 14px default and scale from it. Hand-edited
@@ -265,6 +266,7 @@ impl Default for AppSettings {
             analytics_enabled: default_analytics_enabled(),
             favorite_models: Vec::new(),
             theme: ThemePreference::System,
+            accent: AccentPreference::default(),
             language: AppLanguage::default(),
             ui_font_size: DEFAULT_UI_FONT_SIZE,
             code_font_size: DEFAULT_CODE_FONT_SIZE,
@@ -366,6 +368,8 @@ pub struct PersistedState {
     #[serde(default)]
     pub theme: ThemePreference,
     #[serde(default)]
+    pub accent: AccentPreference,
+    #[serde(default)]
     pub language: AppLanguage,
     #[serde(default = "default_ui_font_size")]
     pub ui_font_size: f32,
@@ -441,6 +445,7 @@ impl PersistedState {
             remembered_model_traits: Vec::new(),
             favorite_models: Vec::new(),
             theme: ThemePreference::System,
+            accent: AccentPreference::default(),
             language: AppLanguage::default(),
             ui_font_size: DEFAULT_UI_FONT_SIZE,
             code_font_size: DEFAULT_CODE_FONT_SIZE,
@@ -564,6 +569,7 @@ impl PersistedState {
             analytics_enabled: self.analytics_enabled,
             favorite_models: self.favorite_models.clone(),
             theme: self.theme,
+            accent: self.accent,
             language: self.language,
             ui_font_size: self.ui_font_size,
             code_font_size: self.code_font_size,
@@ -600,6 +606,7 @@ impl PersistedState {
         self.analytics_enabled = settings.analytics_enabled;
         self.favorite_models = settings.favorite_models;
         self.theme = settings.theme;
+        self.accent = settings.accent;
         self.language = settings.language;
         self.ui_font_size = sanitized_ui_font_size(settings.ui_font_size);
         self.code_font_size = sanitized_code_font_size(settings.code_font_size);

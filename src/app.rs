@@ -59,7 +59,7 @@ use crate::persistence::{
 use crate::query::{Query, QueryCache};
 use crate::review_diff::{Snapshot as ReviewDiffSnapshot, Source as ReviewDiffSource};
 use crate::terminal::TerminalView;
-use crate::theme::{Theme, ThemePreference, sp};
+use crate::theme::{AccentPreference, Theme, ThemePreference, sp};
 use crate::ui::text_field::TextField;
 use crate::ui::{
     MenuChip, ProjectNameSelector, activity_icon, activity_noun, contain_scroll, file_icon, icon,
@@ -2073,7 +2073,7 @@ impl Helm {
                 window.display(cx).and_then(|display| display.uuid().ok()),
             ));
         }
-        crate::theme::apply_theme_preference(state.theme, window, cx);
+        crate::theme::apply_theme_preference(state.theme, state.accent, window, cx);
         crate::platform::set_sidebar_material_width(window, sidebar_width);
         let project_paths = state
             .projects
@@ -2332,7 +2332,12 @@ impl Helm {
 
             cx.observe_window_appearance(window, |this: &mut Self, window, cx| {
                 if this.state.theme == ThemePreference::System {
-                    crate::theme::apply_theme_preference(this.state.theme, window, cx);
+                    crate::theme::apply_theme_preference(
+                        this.state.theme,
+                        this.state.accent,
+                        window,
+                        cx,
+                    );
                     cx.notify();
                 }
             })

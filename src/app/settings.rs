@@ -1273,6 +1273,52 @@ impl Helm {
             },
         );
 
+        let selected_accent = self.state.accent;
+        let accent_swatches = div().flex().items_center().gap(px(8.0)).children(
+            AccentPreference::ALL
+                .into_iter()
+                .enumerate()
+                .map(|(index, preference)| {
+                    let selected = preference == selected_accent;
+                    let weak = cx.entity().downgrade();
+                    let label = preference.label();
+                    let tooltip_label = SharedString::from(label);
+                    div()
+                        .id(("accent-swatch", index))
+                        .tab_index(0)
+                        .w(px(24.0))
+                        .h(px(24.0))
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .flex_none()
+                        .rounded_full()
+                        .cursor_default()
+                        .border_2()
+                        .border_color(if selected {
+                            theme.text
+                        } else {
+                            gpui::transparent_black()
+                        })
+                        .focus_visible(|style| style.border_color(theme.accent))
+                        .tooltip(move |window, cx| {
+                            Tooltip::new(tooltip_label.clone()).build(window, cx)
+                        })
+                        .child(
+                            div()
+                                .w(px(14.0))
+                                .h(px(14.0))
+                                .rounded_full()
+                                .bg(rgb(preference.rgb(theme.is_dark))),
+                        )
+                        .on_click(move |_, window, cx| {
+                            let _ = weak.update(cx, |this, cx| {
+                                this.set_accent_preference(preference, window, cx);
+                            });
+                        })
+                }),
+        );
+
         let selected_ui_font_size = self.state.ui_font_size;
         let weak = cx.entity().downgrade();
         let ui_font_size_handle = self.menu_handle("ui-font-size-selector", cx);
@@ -1397,6 +1443,38 @@ impl Helm {
                             ),
                     )
                     .child(theme_selector),
+            )
+            .child(div().mx(px(20.0)).h(px(1.0)).bg(theme.border))
+            .child(
+                div()
+                    .w_full()
+                    .min_h(px(60.0))
+                    .px(px(20.0))
+                    .py(px(12.0))
+                    .flex()
+                    .items_center()
+                    .gap(px(24.0))
+                    .child(
+                        div()
+                            .flex_1()
+                            .min_w_0()
+                            .child(
+                                div()
+                                    .text_size(sp(13.5))
+                                    .font_weight(FontWeight::MEDIUM)
+                                    .text_color(theme.text)
+                                    .child(tr!("settings.accent")),
+                            )
+                            .child(
+                                div()
+                                    .mt(px(5.0))
+                                    .text_size(sp(12.5))
+                                    .line_height(sp(18.0))
+                                    .text_color(theme.text_secondary)
+                                    .child(tr!("settings.accent_description")),
+                            ),
+                    )
+                    .child(accent_swatches),
             )
             .child(div().mx(px(20.0)).h(px(1.0)).bg(theme.border))
             .child(
@@ -2356,7 +2434,22 @@ impl Helm {
             return;
         }
         self.state.theme = preference;
-        crate::theme::apply_theme_preference(preference, window, cx);
+        crate::theme::apply_theme_preference(preference, self.state.accent, window, cx);
+        self.save();
+        cx.notify();
+    }
+
+    fn set_accent_preference(
+        &mut self,
+        preference: AccentPreference,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.state.accent == preference {
+            return;
+        }
+        self.state.accent = preference;
+        crate::theme::apply_theme_preference(self.state.theme, preference, window, cx);
         self.save();
         cx.notify();
     }

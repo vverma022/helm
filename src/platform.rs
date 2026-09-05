@@ -519,8 +519,11 @@ pub fn configure_sidebar_material(window: &Window, dark: bool) {
             return;
         }
 
-        let channel = if dark { 0x18 } else { 0xF3 } as f64 / 255.0;
-        let tint = NSColor::colorWithSRGBRed_green_blue_alpha(channel, channel, channel, 0.92);
+        // The main panel is translucent too now, so the sidebar scrim has to
+        // stay light enough that the two read as one pane of glass rather than
+        // an opaque rail beside a blurred one.
+        let channel = if dark { 0x0E } else { 0xFA } as f64 / 255.0;
+        let tint = NSColor::colorWithSRGBRed_green_blue_alpha(channel, channel, channel, 0.62);
 
         SIDEBAR_TINT_VIEW.with_borrow_mut(|slot| {
             let needs_new_view = slot.as_ref().is_none_or(|tint_view| {
