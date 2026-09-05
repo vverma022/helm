@@ -1,4 +1,4 @@
-import type { ProviderKind } from '@waku/client';
+import type { ProviderKind } from '@helm/client';
 import { useMemo } from 'react';
 import { View } from 'react-native';
 import { SvgXml } from 'react-native-svg';

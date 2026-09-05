@@ -1,7 +1,7 @@
-import type { AgentSession, ProviderKind, ProviderSessionSummary, SessionMessageMatch } from '@waku/client'
+import type { AgentSession, ProviderKind, ProviderSessionSummary, SessionMessageMatch } from '@helm/client'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { ProviderIcon, PROVIDERS, providerMeta, WakuIcon, type WakuIconName } from '@/components/waku-icon'
+import { ProviderIcon, PROVIDERS, providerMeta, HelmIcon, type HelmIconName } from '@/components/helm-icon'
 import type { SettingsPageId } from '@/components/settings-view'
 import { SETTINGS_PAGES } from '@/components/settings-view'
 import {
@@ -31,7 +31,7 @@ interface PaletteItem {
   label: string
   detail?: string
   content?: { source: string; snippet: string }
-  icon?: WakuIconName
+  icon?: HelmIconName
   provider?: AgentSession['provider']
   shortcut?: string
   pending?: boolean
@@ -429,7 +429,7 @@ export function CommandPalette({
             >
               <ProviderIcon className="size-3.5" provider={resumeProvider} />
               <span>{providerMeta(resumeProvider).shortName}</span>
-              <WakuIcon className="size-3 text-[var(--text-tertiary)]" name="chevronDown" />
+              <HelmIcon className="size-3 text-[var(--text-tertiary)]" name="chevronDown" />
             </button>
           ))}
         </div>
@@ -437,7 +437,7 @@ export function CommandPalette({
           {!items.length ? (
             <div className="grid h-[180px] place-items-center text-center">
               <div>
-                <WakuIcon
+                <HelmIcon
                   className={cn(
                     'mx-auto size-[18px] text-[var(--text-ghost)]',
                     view === 'resume' && resultsPending && 'animate-spin motion-reduce:animate-none',
@@ -520,10 +520,10 @@ function PaletteRows({
         >
           <span className="grid size-5 shrink-0 place-items-center text-[var(--text-secondary)]">
             {item.pending
-              ? <WakuIcon className="size-4 animate-spin motion-reduce:animate-none" name="loaderCircle" />
+              ? <HelmIcon className="size-4 animate-spin motion-reduce:animate-none" name="loaderCircle" />
               : item.provider
               ? <ProviderIcon className="size-4" provider={item.provider} />
-              : item.icon && <WakuIcon className="size-4" name={item.icon} />}
+              : item.icon && <HelmIcon className="size-4" name={item.icon} />}
           </span>
           <span className="min-w-0 flex-1">
             <span className="flex min-w-0 items-baseline gap-[7px]">
@@ -780,7 +780,7 @@ function command(
   id: string,
   section: PaletteSection,
   label: string,
-  icon: WakuIconName,
+  icon: HelmIconName,
   shortcut: string | undefined,
   keywords: string,
   run: () => void,

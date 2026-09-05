@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { WakuClient } from '@waku/client'
+import { HelmClient } from '@helm/client'
 import {
   createContext,
   useCallback,
@@ -26,7 +26,7 @@ export type ConnectionPhase =
   | 'error'
 
 interface DaemonContextValue {
-  client: WakuClient | null
+  client: HelmClient | null
   config: ConnectionConfig | null
   phase: ConnectionPhase
   error: string | null
@@ -41,7 +41,7 @@ const DaemonContext = createContext<DaemonContextValue | null>(null)
 export function DaemonProvider({ children }: { children: ReactNode }) {
   const { locale } = useI18n()
   const queryClient = useQueryClient()
-  const [client, setClient] = useState<WakuClient | null>(null)
+  const [client, setClient] = useState<HelmClient | null>(null)
   const [config, setConfig] = useState<ConnectionConfig | null>(null)
   const [phase, setPhase] = useState<ConnectionPhase>('booting')
   const [error, setError] = useState<string | null>(null)
@@ -61,7 +61,7 @@ export function DaemonProvider({ children }: { children: ReactNode }) {
       setError(null)
       setConfig(normalized)
 
-      const next = new WakuClient({
+      const next = new HelmClient({
         address: normalized.address,
         token: normalized.token,
       })

@@ -3,7 +3,7 @@ import type {
   ComposerDraftAttachment,
   ComposerDrafts,
   ComposerDraftTarget,
-} from '@waku/client';
+} from '@helm/client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useComposerDraftRefreshRevision } from './use-composer-draft-refresh';

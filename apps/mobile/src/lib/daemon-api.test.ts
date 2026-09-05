@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { WakuClient } from '@waku/client';
+import type { HelmClient } from '@helm/client';
 
 import { browseDaemonDirectory, createProject, persistProject } from './daemon-api';
 
@@ -19,7 +19,7 @@ describe('mobile daemon API', () => {
         command = next;
         return { type: 'workspace', result: directory };
       },
-    } as unknown as WakuClient;
+    } as unknown as HelmClient;
 
     await expect(browseDaemonDirectory(client, null)).resolves.toEqual(directory);
     expect(command).toEqual({
@@ -29,14 +29,14 @@ describe('mobile daemon API', () => {
   });
 
   test('normalizes absolute Unix and Windows project paths', () => {
-    expect(createProject('/srv/waku/', 'one', 10)).toEqual({
+    expect(createProject('/srv/helm/', 'one', 10)).toEqual({
       id: 'one',
-      name: 'waku',
-      path: '/srv/waku',
+      name: 'helm',
+      path: '/srv/helm',
       created_at: 10,
     });
-    expect(createProject('C:\\dev\\waku\\', 'two', 10).name).toBe('waku');
-    expect(() => createProject('dev/waku', 'three')).toThrow('absolute path');
+    expect(createProject('C:\\dev\\helm\\', 'two', 10).name).toBe('helm');
+    expect(() => createProject('dev/helm', 'three')).toThrow('absolute path');
   });
 
   test('persists a project without replacing sessions', async () => {
@@ -54,8 +54,8 @@ describe('mobile daemon API', () => {
         }
         return { type: 'taskStateSaved', revision: 3, sessions: [] };
       },
-    } as unknown as WakuClient;
-    const project = createProject('/srv/waku', 'project', 10);
+    } as unknown as HelmClient;
+    const project = createProject('/srv/helm', 'project', 10);
 
     const saved = await persistProject(client, project);
     expect(saved.project).toEqual(project);

@@ -18,7 +18,7 @@ const icons = Object.fromEntries(
 function readIcon(file: string) {
   const source = readFileSync(`${iconDirectory}/${file}`, 'utf8')
   const svg = source.match(/<svg\b([^>]*)>([\s\S]*)<\/svg>/i)
-  if (!svg) throw new Error(`Invalid Waku icon: ${file}`)
+  if (!svg) throw new Error(`Invalid Helm icon: ${file}`)
 
   const viewBox = svg[1]!.match(/viewBox="([^"]+)"/i)?.[1]
     ?.trim()
@@ -44,8 +44,8 @@ export default {
   plugins: [
     iconsPlugin({
       collections: {
-        waku: {
-          prefix: 'waku',
+        helm: {
+          prefix: 'helm',
           icons,
         },
       },

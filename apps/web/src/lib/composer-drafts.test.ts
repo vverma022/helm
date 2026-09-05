@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { ComposerDrafts } from '@waku/client'
+import type { ComposerDrafts } from '@helm/client'
 import {
   composerDraftFor,
   moveComposerDraftToEmpty,
@@ -13,12 +13,12 @@ describe('composer drafts', () => {
     }
     const change = setComposerDraft(
       drafts,
-      { type: 'newSession', projectId: 'waku' },
+      { type: 'newSession', projectId: 'helm' },
       { text: 'from web' },
     )
 
     expect(change).toEqual({
-      target: { type: 'newSession', projectId: 'waku' },
+      target: { type: 'newSession', projectId: 'helm' },
       draft: { text: 'from web', attachments: [] },
     })
     expect(drafts.sessions?.other?.text).toBe('from desktop')

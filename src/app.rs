@@ -131,7 +131,7 @@ const STREAM_SAVE_INTERVAL: Duration = Duration::from_secs(1);
 const DEFAULT_TOAST_DURATION: Duration = Duration::from_secs(5);
 const MINIMUM_TOAST_RESUME_DURATION: Duration = Duration::from_millis(800);
 const TOAST_ANIMATION_DURATION: Duration = Duration::from_millis(150);
-const TASK_NOTIFICATION_TAG_PREFIX: &str = "waku-task:";
+const TASK_NOTIFICATION_TAG_PREFIX: &str = "helm-task:";
 
 pub(crate) fn task_notification_tag(session_id: Uuid) -> String {
     format!("{TASK_NOTIFICATION_TAG_PREFIX}{session_id}")
@@ -559,11 +559,11 @@ struct DriverStartRequest {
     provider: ProviderKind,
     options: DriverStartOptions,
     event_wake: smol::channel::Sender<()>,
-    daemon: waku_client::DaemonSupervisor,
+    daemon: helm_client::DaemonSupervisor,
 }
 
 /// A provider process that has started off-thread but is not installed into
-/// Waku's runtime map yet. Its event receiver safely buffers early events.
+/// Helm's runtime map yet. Its event receiver safely buffers early events.
 struct PreparedDriver {
     handle: DriverHandle,
     events: Receiver<DriverEvent>,
@@ -650,7 +650,7 @@ enum EventPumpSchedule {
 }
 
 /// One cached island of the root view: a region rendered by delegating back
-/// into [`Waku`] under its own view identity.
+/// into [`Helm`] under its own view identity.
 ///
 /// All state stays on the root entity; what the island buys is scope for
 /// gpui's cached-view machinery. The pulse clock and the streaming veil lease
@@ -660,25 +660,25 @@ enum EventPumpSchedule {
 /// invalidation semantics exactly — any root notify still re-renders every
 /// island — so caching cannot show state the single-view architecture would
 /// have repainted.
-struct WakuPane {
-    waku: Option<WeakEntity<Waku>>,
-    content: fn(&mut Waku, &mut Window, &mut Context<Waku>) -> AnyElement,
+struct HelmPane {
+    helm: Option<WeakEntity<Helm>>,
+    content: fn(&mut Helm, &mut Window, &mut Context<Helm>) -> AnyElement,
 }
 
-impl WakuPane {
+impl HelmPane {
     fn new(
-        content: fn(&mut Waku, &mut Window, &mut Context<Waku>) -> AnyElement,
+        content: fn(&mut Helm, &mut Window, &mut Context<Helm>) -> AnyElement,
         cx: &mut App,
     ) -> Entity<Self> {
         cx.new(|_| Self {
-            waku: None,
+            helm: None,
             content,
         })
     }
 
-    fn bind(&mut self, waku: &Entity<Waku>, cx: &mut Context<Self>) {
-        self.waku = Some(waku.downgrade());
-        cx.observe(waku, |_, waku, cx| {
+    fn bind(&mut self, helm: &Entity<Helm>, cx: &mut Context<Self>) {
+        self.helm = Some(helm.downgrade());
+        cx.observe(helm, |_, helm, cx| {
             // A panel slide notifies the root at display rate for its 200ms,
             // and this fan-out would price every one of those ticks at a
             // three-island rebuild. Skipping it hands the decision to the
@@ -690,7 +690,7 @@ impl WakuPane {
             // (terminal output, pulse leases) dirty their ancestor pane
             // without this observer, and the slide's retirement notify
             // below re-runs the fan-out, so nothing outlasts the 200ms.
-            if !waku.read(cx).panels_sliding() {
+            if !helm.read(cx).panels_sliding() {
                 cx.notify();
             }
         })
@@ -698,13 +698,13 @@ impl WakuPane {
     }
 }
 
-impl Render for WakuPane {
+impl Render for HelmPane {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let Some(waku) = self.waku.as_ref().and_then(WeakEntity::upgrade) else {
+        let Some(helm) = self.helm.as_ref().and_then(WeakEntity::upgrade) else {
             return gpui::div().into_any_element();
         };
         let content = self.content;
-        waku.update(cx, |waku, cx| content(waku, window, cx))
+        helm.update(cx, |helm, cx| content(helm, window, cx))
     }
 }
 
@@ -1033,11 +1033,11 @@ impl Default for ActivityScrollViewport {
     }
 }
 
-pub struct Waku {
+pub struct Helm {
     /// Owns the headless provider process for exactly as long as the desktop
     /// app entity. Debug builds can replace it independently after a rebuild;
     /// all live driver handles below are lightweight RPC proxies.
-    daemon: waku_client::DaemonSupervisor,
+    daemon: helm_client::DaemonSupervisor,
     /// Cached once at construction for the Daemon settings connection URL;
     /// rendering must not query account or network configuration.
     daemon_hostname: String,
@@ -1582,10 +1582,10 @@ pub struct Waku {
     menus: RefCell<HashMap<SharedString, ContextMenuHandle>>,
     navigation_rail: Entity<ConversationNavigationRail>,
     navigation_rail_reset_generation: Cell<u64>,
-    /// Cached islands of the root view; see [`WakuPane`].
-    sidebar_pane: Entity<WakuPane>,
-    transcript_pane: Entity<WakuPane>,
-    right_panel_pane: Entity<WakuPane>,
+    /// Cached islands of the root view; see [`HelmPane`].
+    sidebar_pane: Entity<HelmPane>,
+    transcript_pane: Entity<HelmPane>,
+    right_panel_pane: Entity<HelmPane>,
     /// The unix second the pending time-label wake-up targets, or `None` when
     /// none is armed. See `schedule_time_label_wake`.
     time_label_wake: Cell<Option<u64>>,
@@ -1680,7 +1680,7 @@ pub(super) fn next_time_label_change(sessions: &[AgentSession], now: u64) -> Opt
 
 fn migrate_legacy_projectless_projects(
     state: &mut PersistedState,
-    workspace: &waku_client::WorkspaceClient,
+    workspace: &helm_client::WorkspaceClient,
 ) -> (bool, Option<anyhow::Error>) {
     let legacy_indices = state
         .projects
@@ -1698,9 +1698,9 @@ fn migrate_legacy_projectless_projects(
     for index in legacy_indices {
         let path = state.projects[index].path.clone();
         let response = workspace
-            .request(waku_client::WorkspaceOperation::MigrateProjectlessWorkspace { path });
+            .request(helm_client::WorkspaceOperation::MigrateProjectlessWorkspace { path });
         let cwd = match response {
-            Ok(waku_client::WorkspaceResult::ProjectlessWorkspace { cwd }) => cwd,
+            Ok(helm_client::WorkspaceResult::ProjectlessWorkspace { cwd }) => cwd,
             Ok(_) => {
                 return (
                     changed,
@@ -1718,7 +1718,7 @@ fn migrate_legacy_projectless_projects(
     (changed, None)
 }
 
-impl Waku {
+impl Helm {
     fn updater_button_expanded(&self) -> bool {
         self.updater_button_hovered || self.updater_button_focused
     }
@@ -1928,7 +1928,7 @@ impl Waku {
     pub fn new(
         window: &mut Window,
         cx: &mut App,
-        daemon: waku_client::DaemonSupervisor,
+        daemon: helm_client::DaemonSupervisor,
     ) -> Entity<Self> {
         let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
         let store = StateStore::remote(daemon.clone());
@@ -1944,7 +1944,7 @@ impl Waku {
         crate::i18n::set_language(state.language);
         // Chrome text is authored in `sp` rems against the default UI font
         // size, so the window's rem size *is* the UI font size setting.
-        window.set_rem_size(px(waku_client::persistence::sanitized_ui_font_size(
+        window.set_rem_size(px(helm_client::persistence::sanitized_ui_font_size(
             state.ui_font_size,
         )));
         let analytics = crate::analytics::Analytics::new(
@@ -2031,10 +2031,10 @@ impl Waku {
                 .placeholder(tr!("diff.filter_files"))
         });
         let navigation_rail = cx.new(|_| ConversationNavigationRail::new());
-        let sidebar_pane = WakuPane::new(Waku::sidebar_pane_content, cx);
-        let transcript_pane = WakuPane::new(Waku::transcript_pane_content, cx);
-        let right_panel_pane = WakuPane::new(Waku::right_panel_pane_content, cx);
-        let workspace_client = waku_client::WorkspaceClient::new(daemon.client());
+        let sidebar_pane = HelmPane::new(Helm::sidebar_pane_content, cx);
+        let transcript_pane = HelmPane::new(Helm::transcript_pane_content, cx);
+        let right_panel_pane = HelmPane::new(Helm::right_panel_pane_content, cx);
+        let workspace_client = helm_client::WorkspaceClient::new(daemon.client());
         let (projectless_migrated, projectless_migration_error) =
             migrate_legacy_projectless_projects(&mut state, &workspace_client);
         let projectless_save_error = projectless_migrated
@@ -2195,14 +2195,14 @@ impl Waku {
             let event_wake = event_wake_tx.clone();
             let daemon = daemon.client();
             std::thread::Builder::new()
-                .name("waku-computer-permission-probe".into())
+                .name("helm-computer-permission-probe".into())
                 .spawn(move || {
                     let result = match daemon.request(
                         Uuid::nil(),
                         Uuid::nil(),
-                        waku_client::Command::ProbeComputerPermissions { prompt: false },
+                        helm_client::Command::ProbeComputerPermissions { prompt: false },
                     ) {
-                        Ok(waku_client::ResponsePayload::ComputerPermissions { permissions }) => {
+                        Ok(helm_client::ResponsePayload::ComputerPermissions { permissions }) => {
                             Ok(permissions)
                         }
                         Ok(_) => Err("the daemon returned an invalid permission response".into()),
@@ -2447,7 +2447,7 @@ impl Waku {
             .detach();
 
             // Clipboard images and Finder file copies are attachment payloads,
-            // not text paths. The input owns representation priority; Waku
+            // not text paths. The input owns representation priority; Helm
             // owns durable staging and composer/session state.
             cx.subscribe(
                 &composer,
@@ -2701,10 +2701,10 @@ impl Waku {
             .detach();
 
             let markdown_link_handler: md::render::LinkHandler = {
-                let waku = cx.entity().downgrade();
+                let helm = cx.entity().downgrade();
                 Rc::new(move |target, _, cx| {
-                    let handled = waku
-                        .update(cx, |waku, cx| waku.open_transcript_link(target, cx))
+                    let handled = helm
+                        .update(cx, |helm, cx| helm.open_transcript_link(target, cx))
                         .unwrap_or(false);
                     if !handled {
                         cx.open_url(target);
@@ -3009,7 +3009,7 @@ impl Waku {
                 fps_value: 0,
             }
         });
-        navigation_rail.update(cx, |rail, _| rail.set_waku(entity.downgrade()));
+        navigation_rail.update(cx, |rail, _| rail.set_helm(entity.downgrade()));
         for pane in [&sidebar_pane, &transcript_pane, &right_panel_pane] {
             pane.update(cx, |pane, cx| pane.bind(&entity, cx));
         }

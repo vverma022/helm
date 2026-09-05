@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { WakuClient } from '@waku/client';
+import type { HelmClient } from '@helm/client';
 
 import {
   importLocalAttachment,
@@ -16,14 +16,14 @@ describe('mobile attachments', () => {
         return {
           type: 'attachmentStored',
           attachment: {
-            reference: 'waku-attachment:file',
+            reference: 'helm-attachment:file',
             path: '/daemon/blobs/photo.png',
             name: 'photo.png',
             isDir: false,
           },
         };
       },
-    } as unknown as WakuClient;
+    } as unknown as HelmClient;
 
     const attachment = await importLocalAttachment(client, {
       uri: 'file:///photo.png',
@@ -44,12 +44,12 @@ describe('mobile attachments', () => {
       name: 'photo.png',
       is_dir: false,
       is_image: true,
-      blob_reference: 'waku-attachment:file',
+      blob_reference: 'helm-attachment:file',
     });
   });
 
   test('rejects an oversized file before reading or uploading it', async () => {
-    const client = { request: () => Promise.reject(new Error('should not upload')) } as unknown as WakuClient;
+    const client = { request: () => Promise.reject(new Error('should not upload')) } as unknown as HelmClient;
     await expect(importLocalAttachment(client, {
       uri: 'file:///large.zip',
       name: 'large.zip',

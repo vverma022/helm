@@ -30,7 +30,7 @@ const PLAN_USAGE_REFRESH_GROK: Duration = Duration::from_secs(600);
 const PLAN_USAGE_REFRESH_STALE: Duration = Duration::from_secs(30);
 const PLAN_USAGE_RETRY: Duration = Duration::from_secs(90);
 
-impl Waku {
+impl Helm {
     /// Start background fetches of any plan meters whose snapshot is due.
     /// The slow maintenance clock and explicit panel-open requests call this;
     /// guards keep it to one in-flight fetch per provider.
@@ -78,13 +78,13 @@ impl Waku {
                     let result = match daemon.request(
                         Uuid::nil(),
                         Uuid::nil(),
-                        waku_client::Command::FetchPlanUsage {
+                        helm_client::Command::FetchPlanUsage {
                             provider,
                             binary_override,
                             cli_version: claude_version,
                         },
                     ) {
-                        Ok(waku_client::ResponsePayload::PlanUsage { usage }) => Ok(usage),
+                        Ok(helm_client::ResponsePayload::PlanUsage { usage }) => Ok(usage),
                         Ok(_) => Err(anyhow::anyhow!(
                             "the daemon returned an invalid plan usage response"
                         )),

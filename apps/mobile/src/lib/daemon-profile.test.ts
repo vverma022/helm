@@ -11,15 +11,15 @@ import {
 
 describe('daemon profiles', () => {
   test('normalizes host, HTTP aliases, and protocol paths', () => {
-    expect(normalizeDaemonAddress('waku.local:34123')).toBe('ws://waku.local:34123');
-    expect(normalizeDaemonAddress('https://waku.example.com/v1?old=1')).toBe(
-      'wss://waku.example.com',
+    expect(normalizeDaemonAddress('helm.local:34123')).toBe('ws://helm.local:34123');
+    expect(normalizeDaemonAddress('https://helm.example.com/v1?old=1')).toBe(
+      'wss://helm.example.com',
     );
   });
 
   test('rejects unsupported schemes and embedded credentials', () => {
-    expect(() => normalizeDaemonAddress('ftp://waku.local')).toThrow('ws:// or wss://');
-    expect(() => normalizeDaemonAddress('ws://user:secret@waku.local')).toThrow('no credentials');
+    expect(() => normalizeDaemonAddress('ftp://helm.local')).toThrow('ws:// or wss://');
+    expect(() => normalizeDaemonAddress('ws://user:secret@helm.local')).toThrow('no credentials');
   });
 
   test('derives a useful default name without losing timestamps', () => {
@@ -46,7 +46,7 @@ describe('daemon profiles', () => {
     expect(isPrivateDaemonAddress('ws://workstation:34123')).toBe(true);
     expect(isPrivateDaemonAddress('ws://[::1]:34123')).toBe(true);
     expect(isPrivateDaemonAddress('ws://[2001:db8::8]:34123')).toBe(false);
-    expect(isPrivateDaemonAddress('wss://waku.example.com')).toBe(false);
+    expect(isPrivateDaemonAddress('wss://helm.example.com')).toBe(false);
   });
 
   test('creates compact initials', () => {

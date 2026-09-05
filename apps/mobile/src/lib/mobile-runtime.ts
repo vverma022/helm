@@ -5,7 +5,7 @@ import type {
   ProviderKind,
   RuntimeMode,
   SequencedEvent,
-} from '@waku/client';
+} from '@helm/client';
 
 export interface MobileRuntimeClock {
   nowSeconds: () => number;

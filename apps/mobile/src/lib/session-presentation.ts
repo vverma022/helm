@@ -7,8 +7,8 @@ import type {
   ProviderKind,
   RuntimeMode,
   TranscriptBlock,
-} from '@waku/client';
-import { turnAnswerStart, turnFoldLabel } from '@waku/client/transcript-presentation';
+} from '@helm/client';
+import { turnAnswerStart, turnFoldLabel } from '@helm/client/transcript-presentation';
 
 import type { MarkdownBlock } from '../md/parse';
 import { TranscriptMarkdownCache } from '../md/transcript-cache';

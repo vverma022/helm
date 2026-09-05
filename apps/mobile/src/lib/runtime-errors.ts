@@ -1,7 +1,7 @@
 const DAEMON_DISCONNECT_MESSAGES = new Set([
-  'Waku daemon disconnected',
-  'Waku daemon is disconnected',
-  'Waku client disconnected',
+  'Helm daemon disconnected',
+  'Helm daemon is disconnected',
+  'Helm client disconnected',
 ]);
 
 /** Connection loss is owned by the global reconnect banner. It must not

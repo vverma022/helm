@@ -1,8 +1,8 @@
-import type { AgentSession, ThreadGoal, ThreadGoalStatus } from '@waku/client'
+import type { AgentSession, ThreadGoal, ThreadGoalStatus } from '@helm/client'
 import { useEffect, useState, type RefObject } from 'react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
-import { WakuIcon, type WakuIconName } from '@/components/waku-icon'
+import { HelmIcon, type HelmIconName } from '@/components/helm-icon'
 import { useI18n } from '@/lib/i18n'
 import { usePrimaryShortcut } from '@/lib/platform'
 import { cn } from '@/lib/utils'
@@ -113,9 +113,9 @@ export function GoalDialog({
     : t('goal.set')
   const statusAction = goal && !replace
     ? goal.status === 'active'
-      ? { status: 'paused' as const, label: t('goal.pause'), icon: 'stop' as WakuIconName }
+      ? { status: 'paused' as const, label: t('goal.pause'), icon: 'stop' as HelmIconName }
       : goal.status === 'paused' || goal.status === 'blocked' || goal.status === 'usageLimited'
-        ? { status: 'active' as const, label: t('goal.resume'), icon: 'arrowUp' as WakuIconName }
+        ? { status: 'active' as const, label: t('goal.resume'), icon: 'arrowUp' as HelmIconName }
         : null
     : null
   const usage = goal ? goalUsageReadout(goal) : null
@@ -134,7 +134,7 @@ export function GoalDialog({
         finalFocus={returnFocus}
       >
         <DialogTitle className="flex h-12 items-center gap-2.5 px-4 text-sm font-normal">
-          <WakuIcon className="size-[15px]" name="target" />
+          <HelmIcon className="size-[15px]" name="target" />
           <span>{t('goal.title')}</span>
           {goal && (
             <span className={cn(
@@ -216,7 +216,7 @@ function GoalActionRow({
   destructive,
   onClick,
 }: {
-  icon: WakuIconName
+  icon: HelmIconName
   label: string
   shortcut?: string
   enabled: boolean
@@ -233,7 +233,7 @@ function GoalActionRow({
       type="button"
       onClick={onClick}
     >
-      <WakuIcon
+      <HelmIcon
         className={cn('size-3.5', destructive ? 'text-destructive' : 'text-[var(--text-secondary)]')}
         name={icon}
       />

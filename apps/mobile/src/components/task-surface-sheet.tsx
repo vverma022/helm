@@ -13,7 +13,7 @@ import type {
   Project,
   ReviewDiffSource,
   WorkingTreeEntry,
-} from "@waku/client";
+} from "@helm/client";
 import { TerminalView, type TerminalViewRef } from "expo-libghostty";
 import * as Crypto from "expo-crypto";
 import {

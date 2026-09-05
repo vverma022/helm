@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { WakuShell } from '@/components/waku-shell'
+import { HelmShell } from '@/components/helm-shell'
 
 export const Route = createFileRoute('/')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -9,5 +9,5 @@ export const Route = createFileRoute('/')({
 })
 
 function IndexRoute() {
-  return <WakuShell />
+  return <HelmShell />
 }

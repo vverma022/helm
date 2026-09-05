@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
-import { WakuIcon } from '@/components/waku-icon'
+import { HelmIcon } from '@/components/helm-icon'
 import { useI18n } from '@/lib/i18n'
-import wakuAppIconUrl from '../../../../website/public/app-icon.png'
+import helmAppIconUrl from '../../../../website/public/app-icon.png'
 
 export function StartupScreen({
   error,
@@ -23,7 +23,7 @@ export function StartupScreen({
           aria-hidden="true"
           className="size-8 rounded-[8px]"
           draggable={false}
-          src={wakuAppIconUrl}
+          src={helmAppIconUrl}
         />
         {error ? (
           <>
@@ -33,7 +33,7 @@ export function StartupScreen({
             </p>
             {onRetry && (
               <Button className="mt-4 rounded-full px-4" size="sm" type="button" onClick={onRetry}>
-                <WakuIcon name="rotateCw" />
+                <HelmIcon name="rotateCw" />
                 {t('web.try_again')}
               </Button>
             )}

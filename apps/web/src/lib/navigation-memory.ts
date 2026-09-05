@@ -1,4 +1,4 @@
-import type { AgentSession, Project } from '@waku/client'
+import type { AgentSession, Project } from '@helm/client'
 import { isProjectlessProject } from './project-presentation'
 
 export type RememberedNavigation =
@@ -18,7 +18,7 @@ interface NavigationStorage {
   setItem(key: string, value: string): void
 }
 
-const STORAGE_KEY = 'waku.navigation'
+const STORAGE_KEY = 'helm.navigation'
 
 export function routeDestinationTransition(
   previousSessionId: string | undefined,

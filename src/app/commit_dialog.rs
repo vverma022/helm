@@ -8,7 +8,7 @@ use gpui::{KeyBinding, actions};
 use super::*;
 
 actions!(
-    waku_commit_dialog,
+    helm_commit_dialog,
     [ConfirmCommitDialog, DismissCommitDialog]
 );
 
@@ -100,7 +100,7 @@ impl CommitDialogState {
     }
 }
 
-impl Waku {
+impl Helm {
     pub(super) fn commit_operation_status_label(&self) -> Option<String> {
         self.commit_operation
             .as_ref()
@@ -170,7 +170,7 @@ impl Waku {
             commit_push_focus: cx.focus_handle(),
             push_focus: cx.focus_handle(),
         });
-        // Like Waku's other deferred surfaces, the modal joins the dispatch
+        // Like Helm's other deferred surfaces, the modal joins the dispatch
         // tree only after it has drawn. Focus it two frames later so typing
         // cannot fall through to the composer beneath it.
         window.on_next_frame(move |window, _| {
@@ -178,15 +178,15 @@ impl Waku {
         });
         cx.notify();
 
-        let workspace_client = waku_client::WorkspaceClient::new(self.daemon.client());
-        cx.spawn(async move |waku, cx| {
+        let workspace_client = helm_client::WorkspaceClient::new(self.daemon.client());
+        cx.spawn(async move |helm, cx| {
             let result = cx
                 .background_executor()
                 .spawn(async move {
-                    match workspace_client.request(waku_client::WorkspaceOperation::InspectCommit {
+                    match workspace_client.request(helm_client::WorkspaceOperation::InspectCommit {
                         cwd: workspace.clone(),
                     }) {
-                        Ok(waku_client::WorkspaceResult::CommitSnapshot { snapshot }) => {
+                        Ok(helm_client::WorkspaceResult::CommitSnapshot { snapshot }) => {
                             Ok(snapshot)
                         }
                         Ok(_) => Err("the daemon returned an invalid Git response".to_owned()),
@@ -194,8 +194,8 @@ impl Waku {
                     }
                 })
                 .await;
-            let _ = waku.update(cx, |waku, cx| {
-                let Some(dialog) = waku.commit_dialog.as_mut().filter(|dialog| dialog.id == id)
+            let _ = helm.update(cx, |helm, cx| {
+                let Some(dialog) = helm.commit_dialog.as_mut().filter(|dialog| dialog.id == id)
                 else {
                     return;
                 };
@@ -323,20 +323,20 @@ impl Waku {
         window_handle: gpui::AnyWindowHandle,
         cx: &mut Context<Self>,
     ) {
-        let workspace_client = waku_client::WorkspaceClient::new(self.daemon.client());
-        cx.spawn(async move |waku, cx| {
+        let workspace_client = helm_client::WorkspaceClient::new(self.daemon.client());
+        cx.spawn(async move |helm, cx| {
             let generation_workspace = workspace.clone();
             let result = cx
                 .background_executor()
                 .spawn(async move {
                     match workspace_client.request(
-                        waku_client::WorkspaceOperation::GenerateCommitMessage {
+                        helm_client::WorkspaceOperation::GenerateCommitMessage {
                             cwd: generation_workspace,
                             include_unstaged,
                             invocation,
                         },
                     ) {
-                        Ok(waku_client::WorkspaceResult::CommitMessage { message }) => Ok(message),
+                        Ok(helm_client::WorkspaceResult::CommitMessage { message }) => Ok(message),
                         Ok(_) => {
                             Err("the daemon returned an invalid commit message response".into())
                         }
@@ -344,8 +344,8 @@ impl Waku {
                     }
                 })
                 .await;
-            let _ = waku.update(cx, |waku, cx| {
-                let current = waku.commit_operation.as_ref().is_some_and(|operation| {
+            let _ = helm.update(cx, |helm, cx| {
+                let current = helm.commit_operation.as_ref().is_some_and(|operation| {
                     operation.id == id
                         && operation.workspace == workspace
                         && operation.pending == CommitPending::Generating(action)
@@ -355,17 +355,17 @@ impl Waku {
                 }
                 match result {
                     Ok(message) => {
-                        if let Some(operation) = waku.commit_operation.as_mut() {
+                        if let Some(operation) = helm.commit_operation.as_mut() {
                             operation.pending = CommitPending::Git(action);
                         }
                         if let Some(dialog) =
-                            waku.commit_dialog.as_mut().filter(|dialog| dialog.id == id)
+                            helm.commit_dialog.as_mut().filter(|dialog| dialog.id == id)
                         {
                             dialog
                                 .message
                                 .update(cx, |input, cx| input.set_content(message.clone(), cx));
                         }
-                        waku.spawn_git_action(
+                        helm.spawn_git_action(
                             id,
                             action,
                             workspace,
@@ -376,16 +376,16 @@ impl Waku {
                         );
                     }
                     Err(error) => {
-                        waku.commit_operation = None;
+                        helm.commit_operation = None;
                         if let Some(dialog) =
-                            waku.commit_dialog.as_mut().filter(|dialog| dialog.id == id)
+                            helm.commit_dialog.as_mut().filter(|dialog| dialog.id == id)
                         {
                             dialog.error = Some(error);
                             dialog
                                 .message
                                 .update(cx, |message, _| message.set_read_only(false));
                         } else {
-                            waku.show_toast(error);
+                            helm.show_toast(error);
                         }
                     }
                 }
@@ -405,31 +405,31 @@ impl Waku {
         window_handle: gpui::AnyWindowHandle,
         cx: &mut Context<Self>,
     ) {
-        let workspace_client = waku_client::WorkspaceClient::new(self.daemon.client());
-        cx.spawn(async move |waku, cx| {
+        let workspace_client = helm_client::WorkspaceClient::new(self.daemon.client());
+        cx.spawn(async move |helm, cx| {
             let operation_workspace = workspace.clone();
             let result = cx
                 .background_executor()
                 .spawn(async move {
                     let operation = match action {
-                        CommitAction::Commit => waku_client::WorkspaceOperation::Commit {
+                        CommitAction::Commit => helm_client::WorkspaceOperation::Commit {
                             cwd: operation_workspace.clone(),
                             message,
                             include_unstaged,
                             push: false,
                         },
-                        CommitAction::CommitAndPush => waku_client::WorkspaceOperation::Commit {
+                        CommitAction::CommitAndPush => helm_client::WorkspaceOperation::Commit {
                             cwd: operation_workspace.clone(),
                             message,
                             include_unstaged,
                             push: true,
                         },
-                        CommitAction::Push => waku_client::WorkspaceOperation::Push {
+                        CommitAction::Push => helm_client::WorkspaceOperation::Push {
                             cwd: operation_workspace.clone(),
                         },
                     };
                     let result = match workspace_client.request(operation) {
-                        Ok(waku_client::WorkspaceResult::Ack) => Ok(()),
+                        Ok(helm_client::WorkspaceResult::Ack) => Ok(()),
                         Ok(_) => Err(anyhow::anyhow!(
                             "the daemon returned an invalid Git response"
                         )),
@@ -437,11 +437,11 @@ impl Waku {
                     };
                     let snapshot = result.as_ref().err().and_then(|_| {
                         match workspace_client.request(
-                            waku_client::WorkspaceOperation::InspectCommit {
+                            helm_client::WorkspaceOperation::InspectCommit {
                                 cwd: operation_workspace.clone(),
                             },
                         ) {
-                            Ok(waku_client::WorkspaceResult::CommitSnapshot { snapshot }) => {
+                            Ok(helm_client::WorkspaceResult::CommitSnapshot { snapshot }) => {
                                 Some(snapshot)
                             }
                             _ => None,
@@ -450,8 +450,8 @@ impl Waku {
                     (result.map_err(|error| error.to_string()), snapshot)
                 })
                 .await;
-            let focus = waku.update(cx, |waku, cx| {
-                let current = waku.commit_operation.as_ref().is_some_and(|operation| {
+            let focus = helm.update(cx, |helm, cx| {
+                let current = helm.commit_operation.as_ref().is_some_and(|operation| {
                     operation.id == id
                         && operation.workspace == workspace
                         && operation.pending == CommitPending::Git(action)
@@ -460,34 +460,34 @@ impl Waku {
                     return None;
                 }
                 let (result, refreshed_snapshot) = result;
-                waku.commit_operation = None;
-                if waku
+                helm.commit_operation = None;
+                if helm
                     .selected_workspace_path()
                     .is_some_and(|path| path == workspace)
                 {
-                    waku.invalidate_workspace_queries(cx);
+                    helm.invalidate_workspace_queries(cx);
                 } else {
-                    waku.branch_snapshots.invalidate(&workspace);
+                    helm.branch_snapshots.invalidate(&workspace);
                 }
                 let focus = match result {
                     Ok(()) => {
-                        let dialog_was_open = waku
+                        let dialog_was_open = helm
                             .commit_dialog
                             .as_ref()
                             .is_some_and(|dialog| dialog.id == id);
                         if dialog_was_open {
-                            waku.commit_dialog = None;
+                            helm.commit_dialog = None;
                         }
-                        waku.show_success_toast(match action {
+                        helm.show_success_toast(match action {
                             CommitAction::Commit => tr!("commit.committed"),
                             CommitAction::CommitAndPush => tr!("commit.committed_and_pushed"),
                             CommitAction::Push => tr!("commit.pushed"),
                         });
-                        dialog_was_open.then(|| waku.composer_focus(cx))
+                        dialog_was_open.then(|| helm.composer_focus(cx))
                     }
                     Err(error) => {
                         if let Some(dialog) =
-                            waku.commit_dialog.as_mut().filter(|dialog| dialog.id == id)
+                            helm.commit_dialog.as_mut().filter(|dialog| dialog.id == id)
                         {
                             dialog.error = Some(error);
                             if let Some(snapshot) = refreshed_snapshot {
@@ -498,7 +498,7 @@ impl Waku {
                                 .message
                                 .update(cx, |message, _| message.set_read_only(false));
                         } else {
-                            waku.show_toast(error);
+                            helm.show_toast(error);
                         }
                         None
                     }
@@ -606,14 +606,14 @@ impl Waku {
                 )
                 .when(include_enabled, |row| {
                     row.on_click(move |_, _, cx| {
-                        let _ = click_weak.update(cx, |waku, cx| waku.toggle_include_unstaged(cx));
+                        let _ = click_weak.update(cx, |helm, cx| helm.toggle_include_unstaged(cx));
                     })
                     .on_key_down(move |event: &KeyDownEvent, _, cx| {
                         if !event.keystroke.modifiers.modified()
                             && matches!(event.keystroke.key.as_str(), "enter" | "space")
                         {
                             let _ =
-                                key_weak.update(cx, |waku, cx| waku.toggle_include_unstaged(cx));
+                                key_weak.update(cx, |helm, cx| helm.toggle_include_unstaged(cx));
                             cx.stop_propagation();
                         }
                     })
@@ -687,11 +687,11 @@ impl Waku {
         let card = div()
             .id("commit-dialog-card")
             .key_context(DIALOG_CONTEXT)
-            .on_action(cx.listener(|waku, _: &ConfirmCommitDialog, window, cx| {
-                waku.request_commit_action(CommitAction::Commit, window, cx)
+            .on_action(cx.listener(|helm, _: &ConfirmCommitDialog, window, cx| {
+                helm.request_commit_action(CommitAction::Commit, window, cx)
             }))
-            .on_action(cx.listener(|waku, _: &DismissCommitDialog, window, cx| {
-                waku.close_commit_dialog(window, cx)
+            .on_action(cx.listener(|helm, _: &DismissCommitDialog, window, cx| {
+                helm.close_commit_dialog(window, cx)
             }))
             .tab_group()
             .tab_stop(false)
@@ -768,7 +768,7 @@ impl Waku {
             .justify_center()
             .on_mouse_down(
                 MouseButton::Left,
-                cx.listener(|waku, _, window, cx| waku.close_commit_dialog(window, cx)),
+                cx.listener(|helm, _, window, cx| helm.close_commit_dialog(window, cx)),
             )
             .child(card);
         Some(gpui::deferred(layer).with_priority(4).into_any_element())
@@ -785,7 +785,7 @@ fn render_commit_action_row(
     active: bool,
     shortcut: Option<&'static str>,
     action: CommitAction,
-    weak: WeakEntity<Waku>,
+    weak: WeakEntity<Helm>,
     theme: &Theme,
 ) -> Stateful<Div> {
     let foreground = if enabled {
@@ -845,16 +845,16 @@ fn render_commit_action_row(
         })
         .when(enabled, |row| {
             row.on_click(move |_, window, cx| {
-                let _ = click_weak.update(cx, |waku, cx| {
-                    waku.request_commit_action(action, window, cx)
+                let _ = click_weak.update(cx, |helm, cx| {
+                    helm.request_commit_action(action, window, cx)
                 });
             })
             .on_key_down(move |event: &KeyDownEvent, window, cx| {
                 if !event.keystroke.modifiers.modified()
                     && matches!(event.keystroke.key.as_str(), "enter" | "space")
                 {
-                    let _ = key_weak.update(cx, |waku, cx| {
-                        waku.request_commit_action(action, window, cx)
+                    let _ = key_weak.update(cx, |helm, cx| {
+                        helm.request_commit_action(action, window, cx)
                     });
                     cx.stop_propagation();
                 }

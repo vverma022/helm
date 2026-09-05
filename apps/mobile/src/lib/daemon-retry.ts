@@ -1,4 +1,4 @@
-import { WakuConnectionError } from '@waku/client';
+import { HelmConnectionError } from '@helm/client';
 
 /** First wait after a failed attempt; every later wait doubles. */
 export const RECONNECT_BASE_DELAY_MS = 1_000;
@@ -34,23 +34,23 @@ export interface ConnectionFailure {
  * a retry decision. Only the client's own failures are retryable: storage
  * faults, missing tokens, and unknown errors need a person. */
 export function describeConnectionFailure(cause: unknown, fallback: string): ConnectionFailure {
-  if (cause instanceof WakuConnectionError) {
+  if (cause instanceof HelmConnectionError) {
     switch (cause.kind) {
       case 'rejected':
         return {
           message:
-            'The daemon rejected this token. Edit the connection and paste the current token from Waku’s Daemon settings.',
+            'The daemon rejected this token. Edit the connection and paste the current token from Helm’s Daemon settings.',
           retryable: false,
         };
       case 'protocol':
         return {
           message:
-            'This daemon runs a different Waku version than the app. Update Waku on the host, or update this app.',
+            'This daemon runs a different Helm version than the app. Update Helm on the host, or update this app.',
           retryable: false,
         };
       case 'handshake':
         return {
-          message: 'Something other than a Waku daemon answered at this address. Check the address and port.',
+          message: 'Something other than a Helm daemon answered at this address. Check the address and port.',
           retryable: false,
         };
       case 'timeout':

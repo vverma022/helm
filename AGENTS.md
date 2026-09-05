@@ -1,21 +1,98 @@
-# Waku development guidance
+# Helm development guidance
 
 ## Development runtime
 
 - Assume `bun ./scripts/dev.ts` is already running and owns the current
-  `Waku Debug.app` process. Source changes are rebuilt, signed, and relaunched
+  `Helm Debug.app` process. Source changes are rebuilt, signed, and relaunched
   automatically. Only run it yourself if not already launched.
 - During normal development and UI validation, do not run
   `scripts/bundle.sh debug`, start a second watcher, or manually quit/relaunch
-  `Waku Debug.app`. Quitting the app also stops the watcher.
+  `Helm Debug.app`. Quitting the app also stops the watcher.
 - After an edit, wait for the watcher to finish its successful rebuild and
   validate the freshly relaunched debug app. Only start or recover the watcher
   manually when it is confirmed unavailable.
 - No visual test unless requested.
 
+## Architecture
+
+Helm Desktop is a GPUI app that is an **RPC client of a separate `helm-daemon`
+process**. Nothing in `src/` runs a provider, touches a workspace, or reads
+task storage directly — it all goes over the daemon socket. Four crates:
+
+| Crate | Owns |
+| --- | --- |
+| [`helm-protocol`](crates/helm-protocol) | The wire contract: `Command`/`Response`/`Event`, `PROTOCOL_VERSION`, and every shared model type. `ts-rs`-annotated, so it also generates the browser client's types. |
+| [`helm-core`](crates/helm-core) | The daemon's guts: provider drivers, SQLite persistence, blob store, Git, workspaces, skills, usage. |
+| [`helm-daemon`](crates/helm-daemon) | The binary. A thin `main` over `helm-core`'s server. |
+| [`helm-client`](crates/helm-client) | The Rust side of the socket: handshake, request IDs, subscriptions, replay cursors, daemon supervision. Desktop depends on this, never on `helm-core`. |
+
+Three clients speak that one protocol: `src/` (desktop),
+[`apps/web`](apps/web) (TanStack Start), [`apps/mobile`](apps/mobile) (Expo).
+The two JS clients share [`packages/helm-client`](packages/helm-client), whose
+`src/generated` types come straight from the Rust protocol — see Conventions.
+
+Desktop layout worth knowing before editing:
+
+- `src/app.rs` + `src/app/` — the whole UI. One `Helm` root entity holds all
+  state; the sidebar, transcript, and right panel are cached `HelmPane`
+  islands. `runtime.rs` owns per-session driver lifecycle, `streaming.rs` the
+  event pump, `transcript_view.rs` the virtualized row list.
+- `src/driver/` — a proxy that turns `DriverControl` calls into daemon RPC.
+  The real drivers live in `crates/helm-core/src/driver/`.
+- `src/md/` — the transcript's own Markdown parser, renderer, syntax
+  highlighter, and selection model. Not a library; built for streaming.
+- `src/ui/` — in-house GPUI primitives (menus, scrollbar, tooltip, text field,
+  motion). Extend these rather than adding a widget crate.
+- `src/query.rs` — the one sanctioned way to read data that has to be fetched.
+  `Ready`/`Pending`/`Missing(token)`, generation-guarded. Do not hand-roll a
+  fourth cache with its own counter.
+
+[docs/providers.md](docs/providers.md) is the map of the driver abstraction —
+seven transports behind eleven providers, what restarts a session vs. what
+applies in place. Read it before touching provider behavior.
+[docs/titles.md](docs/titles.md) and
+[docs/commit-messages.md](docs/commit-messages.md) cover the two places Helm
+invokes an agent CLI headlessly on its own behalf.
+
+## Checks
+
+The dev watcher is the build. Run these directly only to verify a change:
+
+```sh
+cargo check
+cargo test
+cargo test -p helm-core codex          # one crate, filtered by name
+cargo test transcript_row_kinds        # one test
+cargo fmt --package helm --package helm-protocol --package helm-client --package helm-core --package helm-daemon -- --check
+bun run protocol:check
+bun run --filter @helm/client check
+bun run --filter @helm/client test
+```
+
+Rust tests are inline `#[cfg(test)] mod tests` blocks; there is no `tests/`
+directory. UI behavior is tested by pulling the logic into a free function and
+asserting on it ([src/app/tests.rs](src/app/tests.rs) is the pattern) —
+`#[gpui::test]` is reserved for the few cases that need a real `App`.
+`.cargo/config.toml` caps Cargo at `jobs = 4`, so a cold build is not quick.
+
+## Conventions
+
+- **Wire types are generated downstream.** Change anything in
+  `helm-protocol` and run `bun run protocol:generate`, then commit
+  `packages/helm-client/src/generated`. Bump `PROTOCOL_VERSION` when the change
+  is not backward compatible — three clients negotiate against it.
+- **No user-facing string literals.** Text goes through `tr!` / `tr_cow!`
+  against [locales/app.yml](locales/app.yml), and `ja.yml` and `zh-CN.yml` must
+  gain the same key. `tr_cow!` borrows and belongs on render paths; `tr!`
+  allocates and is for interpolation.
+- **Paths from the daemon are the daemon host's.** Never resolve, stat, or
+  display one as if it were local — the daemon may be on another machine.
+- Release desktop config is `~/.helm/app.json`; Debug is isolated at
+  `temp/app.json`, so the two never fight over state.
+
 ## Performance
 
-- Treat performance as a product requirement, not a follow-up. Waku is a native
+- Treat performance as a product requirement, not a follow-up. Helm is a native
   app competing with web clients, and staying smooth under a long transcript on
   a high-refresh display is the point of being native. Prefer the faster design
   when it costs nothing in clarity, and measure before assuming a cost is fine.
@@ -81,13 +158,13 @@
   behavior — or when an in-house `src/ui` primitive needs a proven native
   precedent. Zed is the canonical GPUI codebase; read its crates rather than
   `gpui-component`, and read the gpui revision pinned in `Cargo.toml` so the
-  APIs match what Waku builds against.
+  APIs match what Helm builds against.
 - Split the two references by concern: T3 Code answers what a coding-agent
   client should do, Zed answers how a polished GPUI app implements it. The
   same restraint applies to both — no reference spelunking for localized
   fixes or changes the user has already specified.
 - Use the reference as behavioral and design evidence, not as an instruction to
-  reproduce web-specific interaction patterns or known bugs. Waku should keep
+  reproduce web-specific interaction patterns or known bugs. Helm should keep
   native macOS conventions.
 - Explicit user screenshots and feedback override a previous or merely
   "consistent" treatment.

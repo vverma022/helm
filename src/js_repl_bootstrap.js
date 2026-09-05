@@ -17,26 +17,26 @@
     }
   };
 
-  const nativeSkyCall = globalThis.__wakuSkyCall;
-  const nativeWrite = globalThis.__wakuWrite;
-  const nativeEmitImage = globalThis.__wakuEmitImage;
-  const nativeSetResponseMeta = globalThis.__wakuSetResponseMeta;
-  const nativeScheduleTimer = globalThis.__wakuScheduleTimer;
-  const nativeClearTimer = globalThis.__wakuClearTimer;
-  const nativeRefreshTimer = globalThis.__wakuRefreshTimer;
-  const cwd = globalThis.__wakuCwd;
-  const homeDir = globalThis.__wakuHomeDir;
-  const tmpDir = globalThis.__wakuTmpDir;
-  delete globalThis.__wakuSkyCall;
-  delete globalThis.__wakuWrite;
-  delete globalThis.__wakuEmitImage;
-  delete globalThis.__wakuSetResponseMeta;
-  delete globalThis.__wakuScheduleTimer;
-  delete globalThis.__wakuClearTimer;
-  delete globalThis.__wakuRefreshTimer;
-  delete globalThis.__wakuCwd;
-  delete globalThis.__wakuHomeDir;
-  delete globalThis.__wakuTmpDir;
+  const nativeSkyCall = globalThis.__helmSkyCall;
+  const nativeWrite = globalThis.__helmWrite;
+  const nativeEmitImage = globalThis.__helmEmitImage;
+  const nativeSetResponseMeta = globalThis.__helmSetResponseMeta;
+  const nativeScheduleTimer = globalThis.__helmScheduleTimer;
+  const nativeClearTimer = globalThis.__helmClearTimer;
+  const nativeRefreshTimer = globalThis.__helmRefreshTimer;
+  const cwd = globalThis.__helmCwd;
+  const homeDir = globalThis.__helmHomeDir;
+  const tmpDir = globalThis.__helmTmpDir;
+  delete globalThis.__helmSkyCall;
+  delete globalThis.__helmWrite;
+  delete globalThis.__helmEmitImage;
+  delete globalThis.__helmSetResponseMeta;
+  delete globalThis.__helmScheduleTimer;
+  delete globalThis.__helmClearTimer;
+  delete globalThis.__helmRefreshTimer;
+  delete globalThis.__helmCwd;
+  delete globalThis.__helmHomeDir;
+  delete globalThis.__helmTmpDir;
 
   const write = (value, newline = false) => nativeWrite(format(value), newline);
   globalThis.console = Object.freeze({
@@ -46,8 +46,8 @@
     error: (...values) => nativeWrite(values.map((value) => format(value)).join(" "), true),
   });
 
-  const timerId = Symbol("waku.timerId");
-  const timerRefed = Symbol("waku.timerRefed");
+  const timerId = Symbol("helm.timerId");
+  const timerRefed = Symbol("helm.timerRefed");
   const timers = new Map();
   class Timeout {
     constructor(id) {
@@ -88,7 +88,7 @@
     timers.delete(id);
     nativeClearTimer(id);
   };
-  globalThis.__wakuRunTimer = (id) => {
+  globalThis.__helmRunTimer = (id) => {
     const timer = timers.get(id);
     if (!timer) return;
     if (!timer.repeat) timers.delete(id);
@@ -384,7 +384,7 @@
   };
 
   let requestMeta = Object.freeze({});
-  globalThis.__wakuSetRequestMeta = (meta) => {
+  globalThis.__helmSetRequestMeta = (meta) => {
     requestMeta = Object.freeze(meta ?? {});
   };
   globalThis.nodeRepl = Object.freeze({

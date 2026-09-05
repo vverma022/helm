@@ -1,4 +1,4 @@
-import type { ActivityKind } from '@waku/client';
+import type { ActivityKind } from '@helm/client';
 import type { SymbolViewProps } from 'expo-symbols';
 
 /** One glyph per activity kind, shared by the transcript card and its

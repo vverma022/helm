@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { ActivityItem, AgentSession } from '@waku/client'
+import type { ActivityItem, AgentSession } from '@helm/client'
 import {
   activityActionLabel,
   activityDisclosureSections,

@@ -180,7 +180,7 @@ export function CodeFileSurface({
         onPointerDown={focusEditorFromCanvas}
       >
         <DiffsFile
-          className="waku-code-editor waku-code-surface h-full min-h-full min-w-full bg-card"
+          className="helm-code-editor helm-code-surface h-full min-h-full min-w-full bg-card"
           disableWorkerPool
           edit
           editorOptions={editorOptions}
@@ -309,7 +309,7 @@ function CodeDiffSurfaceContent({
       {/* CodeView virtualizes both the multi-file item list and each file's
           rendered lines. Keep it as this surface's only scroll virtualizer. */}
       <CodeView
-        className="waku-code-surface size-full overflow-auto bg-background"
+        className="helm-code-surface size-full overflow-auto bg-background"
         disableWorkerPool={disableWorkerPool}
         items={model.items}
         options={options}

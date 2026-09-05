@@ -3,7 +3,7 @@ use gpui::{KeyBinding, actions};
 
 use super::*;
 
-actions!(waku_sidebar, [CancelSessionRename]);
+actions!(helm_sidebar, [CancelSessionRename]);
 
 const SESSION_RENAME_PARENT_CONTEXT: &str = "SessionRename";
 const SESSION_RENAME_FIELD_CONTEXT: &str = "SessionRename > TextInput";
@@ -408,7 +408,7 @@ fn reveal_sidebar_list_row(list: &ListState, rows: &[SidebarRow], index: usize) 
     }
 }
 
-impl Waku {
+impl Helm {
     pub(super) fn window_drag_region(
         &self,
         region: Stateful<Div>,
@@ -993,17 +993,17 @@ impl Waku {
             return;
         }
 
-        let workspace = waku_client::WorkspaceClient::new(self.daemon.client());
-        cx.spawn(async move |waku, cx| {
+        let workspace = helm_client::WorkspaceClient::new(self.daemon.client());
+        cx.spawn(async move |helm, cx| {
             let labels = cx
                 .background_executor()
                 .spawn(async move {
                     let mut labels = HashMap::new();
                     for path in paths {
                         let branch = match workspace.request(
-                            waku_client::WorkspaceOperation::InspectBranches { cwd: path.clone() },
+                            helm_client::WorkspaceOperation::InspectBranches { cwd: path.clone() },
                         ) {
-                            Ok(waku_client::WorkspaceResult::Branches {
+                            Ok(helm_client::WorkspaceResult::Branches {
                                 snapshot: Some(snapshot),
                             }) => snapshot.display_branch().map(str::to_owned),
                             _ => None,
@@ -1015,11 +1015,11 @@ impl Waku {
                     labels
                 })
                 .await;
-            let _ = waku.update(cx, |waku, cx| {
-                if waku.sidebar_branch_scan_generation.get() != generation {
+            let _ = helm.update(cx, |helm, cx| {
+                if helm.sidebar_branch_scan_generation.get() != generation {
                     return;
                 }
-                *waku.sidebar_branch_labels.borrow_mut() = labels
+                *helm.sidebar_branch_labels.borrow_mut() = labels
                     .into_iter()
                     .map(|(path, branch)| (path, SharedString::from(branch)))
                     .collect();
@@ -1890,7 +1890,7 @@ impl Waku {
                 .child(SharedString::from(localized_session_title(session)))
                 .into_any_element()
         };
-        let waku = cx.entity().downgrade();
+        let helm = cx.entity().downgrade();
         let menu = self.menu_handle(format!("session-{session_id}"), cx);
         let row_focus = menu.trigger_focus_handle().clone();
         let keyboard_menu = menu.clone();
@@ -2020,18 +2020,18 @@ impl Waku {
                 SharedString::from(format!("session-menu-{session_id}")),
                 &menu,
                 move |_| {
-                    let rename_waku = waku.clone();
-                    let remove_waku = waku.clone();
+                    let rename_helm = helm.clone();
+                    let remove_helm = helm.clone();
                     vec![
                         MenuItem::new(tr!("common.rename"), move |window, cx| {
-                            let _ = rename_waku.update(cx, |waku, cx| {
-                                waku.begin_session_rename(session_id, window, cx);
+                            let _ = rename_helm.update(cx, |helm, cx| {
+                                helm.begin_session_rename(session_id, window, cx);
                             });
                         }),
                         MenuItem::Separator,
                         MenuItem::new(tr!("common.remove"), move |_, cx| {
-                            let _ = remove_waku
-                                .update(cx, |waku, cx| waku.remove_session(session_id, cx));
+                            let _ = remove_helm
+                                .update(cx, |helm, cx| helm.remove_session(session_id, cx));
                         }),
                     ]
                 },
@@ -2624,7 +2624,7 @@ mod tests {
 
     #[test]
     fn projectless_sidebar_projects_are_paths_under_the_workspace_root() {
-        let root = Path::new("/tmp/.waku/projects");
+        let root = Path::new("/tmp/.helm/projects");
         let projectless = Project {
             id: Uuid::from_u128(1),
             name: "Task".to_owned(),

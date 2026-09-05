@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import type { ProviderKind, RuntimeMode } from '@waku/client';
+import type { ProviderKind, RuntimeMode } from '@helm/client';
 import {
   rememberedModelTraits,
   rememberComposerSession,
   type ComposerPreferences,
-} from '@waku/client/composer-preferences';
+} from '@helm/client/composer-preferences';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';

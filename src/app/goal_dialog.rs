@@ -13,7 +13,7 @@ use crate::usage::format_tokens;
 
 use super::*;
 
-actions!(waku_goal_dialog, [ConfirmGoalDialog, DismissGoalDialog]);
+actions!(helm_goal_dialog, [ConfirmGoalDialog, DismissGoalDialog]);
 
 const DIALOG_CONTEXT: &str = "GoalDialog";
 const DIALOG_INPUT_CONTEXT: &str = "GoalDialog > TextInput";
@@ -52,7 +52,7 @@ pub(super) struct GoalDialogState {
     clear_focus: FocusHandle,
 }
 
-impl Waku {
+impl Helm {
     /// Stage the goal dialog for `session_id`; the next frame builds it.
     pub(super) fn request_goal_dialog(
         &mut self,
@@ -100,7 +100,7 @@ impl Waku {
             status_focus: cx.focus_handle(),
             clear_focus: cx.focus_handle(),
         });
-        // Like Waku's other deferred surfaces, the modal joins the dispatch
+        // Like Helm's other deferred surfaces, the modal joins the dispatch
         // tree only after it has drawn. Focus it two frames later so typing
         // cannot fall through to the composer beneath it.
         window.on_next_frame(move |window, _| {
@@ -122,7 +122,7 @@ impl Waku {
     /// Hand a goal operation to the session's runtime, starting one first
     /// when none exists yet. Goals attach to the provider thread, not to any
     /// turn — the Codex CLI opens its thread at launch, so `/goal` works
-    /// there before the first message. Waku starts providers lazily, so the
+    /// there before the first message. Helm starts providers lazily, so the
     /// goal path starts the runtime itself and the queued operations drain
     /// the moment it installs.
     pub(super) fn dispatch_goal_operation(
@@ -207,12 +207,12 @@ impl Waku {
         // Continuation can legitimately never come — an inherited deferral,
         // or a goal feature disabled provider-side. Do not let the working
         // indicator outlive that silence.
-        cx.spawn(async move |waku, cx| {
+        cx.spawn(async move |helm, cx| {
             cx.background_executor()
                 .timer(std::time::Duration::from_secs(30))
                 .await;
-            let _ = waku.update(cx, |waku, cx| {
-                let stale = waku
+            let _ = helm.update(cx, |helm, cx| {
+                let stale = helm
                     .state
                     .sessions
                     .iter()
@@ -222,7 +222,7 @@ impl Waku {
                             && session.active_turn_is_unconfirmed_pursuit()
                     });
                 if stale {
-                    waku.unwind_unconfirmed_pursuit_turn(session_id);
+                    helm.unwind_unconfirmed_pursuit_turn(session_id);
                     cx.notify();
                 }
             });
@@ -381,11 +381,11 @@ impl Waku {
         let mut card = div()
             .id("goal-dialog-card")
             .key_context(DIALOG_CONTEXT)
-            .on_action(cx.listener(|waku, _: &ConfirmGoalDialog, window, cx| {
-                waku.confirm_goal_dialog(window, cx);
+            .on_action(cx.listener(|helm, _: &ConfirmGoalDialog, window, cx| {
+                helm.confirm_goal_dialog(window, cx);
             }))
-            .on_action(cx.listener(|waku, _: &DismissGoalDialog, window, cx| {
-                waku.close_goal_dialog(window, cx);
+            .on_action(cx.listener(|helm, _: &DismissGoalDialog, window, cx| {
+                helm.close_goal_dialog(window, cx);
             }))
             .tab_group()
             .tab_stop(false)
@@ -466,7 +466,7 @@ impl Waku {
             theme.text,
             weak.clone(),
             &theme,
-            |waku, window, cx| waku.confirm_goal_dialog(window, cx),
+            |helm, window, cx| helm.confirm_goal_dialog(window, cx),
         );
         let mut actions_column = div()
             .p(px(8.0))
@@ -486,7 +486,7 @@ impl Waku {
                 theme.text,
                 toggle_weak,
                 &theme,
-                move |waku, window, cx| waku.goal_dialog_set_status(status, window, cx),
+                move |helm, window, cx| helm.goal_dialog_set_status(status, window, cx),
             ));
         }
         if current.is_some() && !replace {
@@ -501,7 +501,7 @@ impl Waku {
                 theme.danger,
                 clear_weak,
                 &theme,
-                |waku, window, cx| waku.goal_dialog_clear(window, cx),
+                |helm, window, cx| helm.goal_dialog_clear(window, cx),
             ));
         }
         let card = card
@@ -525,7 +525,7 @@ impl Waku {
             .justify_center()
             .on_mouse_down(
                 MouseButton::Left,
-                cx.listener(|waku, _, window, cx| waku.close_goal_dialog(window, cx)),
+                cx.listener(|helm, _, window, cx| helm.close_goal_dialog(window, cx)),
             )
             .child(card);
         Some(gpui::deferred(layer).with_priority(4).into_any_element())
@@ -541,9 +541,9 @@ fn render_goal_action_row(
     enabled: bool,
     shortcut: Option<&'static str>,
     tint: gpui::Hsla,
-    weak: WeakEntity<Waku>,
+    weak: WeakEntity<Helm>,
     theme: &Theme,
-    activate: impl Fn(&mut Waku, &mut Window, &mut Context<Waku>) + Clone + 'static,
+    activate: impl Fn(&mut Helm, &mut Window, &mut Context<Helm>) + Clone + 'static,
 ) -> Stateful<Div> {
     let foreground = if enabled { tint } else { theme.text_ghost };
     let click_activate = activate.clone();
@@ -592,13 +592,13 @@ fn render_goal_action_row(
         })
         .when(enabled, |row| {
             row.on_click(move |_, window, cx| {
-                let _ = click_weak.update(cx, |waku, cx| click_activate(waku, window, cx));
+                let _ = click_weak.update(cx, |helm, cx| click_activate(helm, window, cx));
             })
             .on_key_down(move |event: &KeyDownEvent, window, cx| {
                 if !event.keystroke.modifiers.modified()
                     && matches!(event.keystroke.key.as_str(), "enter" | "space")
                 {
-                    let _ = key_weak.update(cx, |waku, cx| activate(waku, window, cx));
+                    let _ = key_weak.update(cx, |helm, cx| activate(helm, window, cx));
                     cx.stop_propagation();
                 }
             })

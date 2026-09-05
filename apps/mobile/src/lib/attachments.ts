@@ -1,8 +1,8 @@
 import {
   MAX_WIRE_MESSAGE_BYTES,
   type MessageAttachment,
-  type WakuClient,
-} from '@waku/client';
+  type HelmClient,
+} from '@helm/client';
 
 /** Leave enough JSON/base64 headroom for the websocket envelope, while also
  * respecting the daemon's 32 MiB per-attachment limit. */
@@ -21,7 +21,7 @@ export interface LocalAttachmentFile {
 }
 
 export async function importLocalAttachment(
-  client: WakuClient,
+  client: HelmClient,
   local: LocalAttachmentFile,
 ): Promise<MessageAttachment> {
   if (local.size != null && local.size > MAX_ATTACHMENT_BYTES) {
