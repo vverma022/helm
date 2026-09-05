@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <g>
+    <line x1="256.00" y1="118.00" x2="256.00" y2="60.00" stroke="#FFFFFF" stroke-width="18.0" stroke-linecap="round"/>
+    <line x1="353.58" y1="158.42" x2="394.59" y2="117.41" stroke="#FFFFFF" stroke-width="18.0" stroke-linecap="round"/>
+    <line x1="394.00" y1="256.00" x2="452.00" y2="256.00" stroke="#FFFFFF" stroke-width="18.0" stroke-linecap="round"/>
+    <line x1="353.58" y1="353.58" x2="394.59" y2="394.59" stroke="#FFFFFF" stroke-width="18.0" stroke-linecap="round"/>
+    <line x1="256.00" y1="394.00" x2="256.00" y2="452.00" stroke="#FFFFFF" stroke-width="18.0" stroke-linecap="round"/>
+    <line x1="158.42" y1="353.58" x2="117.41" y2="394.59" stroke="#FFFFFF" stroke-width="18.0" stroke-linecap="round"/>
+    <line x1="118.00" y1="256.00" x2="60.00" y2="256.00" stroke="#FFFFFF" stroke-width="18.0" stroke-linecap="round"/>
+    <line x1="158.42" y1="158.42" x2="117.41" y2="117.41" stroke="#FFFFFF" stroke-width="18.0" stroke-linecap="round"/>
+    <circle cx="256.0" cy="256.0" r="138.0" fill="none" stroke="#FFFFFF" stroke-width="22.0"/>
+    <line x1="256.00" y1="224.00" x2="256.00" y2="118.00" stroke="#FFFFFF" stroke-width="13.0" stroke-linecap="butt"/>
+    <line x1="278.63" y1="233.37" x2="353.58" y2="158.42" stroke="#FFFFFF" stroke-width="13.0" stroke-linecap="butt"/>
+    <line x1="288.00" y1="256.00" x2="394.00" y2="256.00" stroke="#FFFFFF" stroke-width="13.0" stroke-linecap="butt"/>
+    <line x1="278.63" y1="278.63" x2="353.58" y2="353.58" stroke="#FFFFFF" stroke-width="13.0" stroke-linecap="butt"/>
+    <line x1="256.00" y1="288.00" x2="256.00" y2="394.00" stroke="#FFFFFF" stroke-width="13.0" stroke-linecap="butt"/>
+    <line x1="233.37" y1="278.63" x2="158.42" y2="353.58" stroke="#FFFFFF" stroke-width="13.0" stroke-linecap="butt"/>
+    <line x1="224.00" y1="256.00" x2="118.00" y2="256.00" stroke="#FFFFFF" stroke-width="13.0" stroke-linecap="butt"/>
+    <line x1="233.37" y1="233.37" x2="158.42" y2="158.42" stroke="#FFFFFF" stroke-width="13.0" stroke-linecap="butt"/>
+    <circle cx="256.0" cy="256.0" r="36.0" fill="#FFFFFF"/>
+  </g>
+</svg>
