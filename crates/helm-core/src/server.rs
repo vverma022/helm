@@ -1617,7 +1617,11 @@ mod tests {
         // to terminal capability queries. The PTY's local echo is enough to
         // prove that daemon-side input and output both crossed the WebSocket.
         let marker = b"helm-terminal-round-trip";
-        let deadline = std::time::Instant::now() + Duration::from_secs(3);
+        // This is the one deadline here that waits on an OS process rather than
+        // an in-process channel, so it must tolerate a login shell starting on a
+        // machine that is busy building. The loop exits as soon as the marker
+        // arrives, so the bound only costs time when the round trip truly fails.
+        let deadline = std::time::Instant::now() + Duration::from_secs(30);
         let mut output = Vec::new();
         let mut seen_events = Vec::new();
         while std::time::Instant::now() < deadline
