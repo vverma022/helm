@@ -86,7 +86,11 @@
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
     --radius: 0.625rem;
-    --brand: oklch(0.578 0.207 27.3);
+    /* The app's Red accent, so the mark in the header is the same red as the
+       icon in the dock and the accent inside the product. These come from
+       AccentPreference::Red in crates/helm-protocol/src/theme.rs — #D1373C on
+       light, #E5484D on dark — rather than a separately chosen web red. */
+    --brand: oklch(0.573 0.191 24.0);
     --brand-foreground: oklch(0.99 0 0);
     --sidebar: oklch(0.985 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
@@ -99,7 +103,7 @@
 }
 
 .dark {
-    --brand: oklch(0.655 0.196 27.3);
+    --brand: oklch(0.626 0.193 23.0);
     --brand-foreground: oklch(0.145 0 0);
     --background: oklch(0.145 0 0);
     --foreground: oklch(0.945 0 0);
