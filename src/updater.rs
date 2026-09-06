@@ -1394,8 +1394,13 @@ mod windows {
         /// below came from that script with a throwaway key.
         #[test]
         fn a_signature_from_the_release_script_verifies_here() {
-            const PUBLIC: &str = "7gZ3dbx+MPQD4vc2dk7olL9QU66JIjpJ1iqNNafU2lQ=";
-            const SIGNATURE: &str = "eBIPKGvQSxFIVNwOzNjzHYs/AGiYFIe3pGulv0TeocoMN0+0l28OJZrlJ2ZuQnNBfif10VW3virGo+7GP3TwCw==";
+            // A matched set: SIGNATURE commits to exactly these PAYLOAD bytes
+            // under this PUBLIC key, produced by Node's Ed25519 the way
+            // scripts/appcast-windows.ts signs a real release. Editing any one
+            // of the three in isolation -- including retyping the payload --
+            // breaks verification.
+            const PUBLIC: &str = "qSIHq3jgmwPxq1renX7oMmHTe0+MZOQVol8oqwkhpjY=";
+            const SIGNATURE: &str = "2QxdPnTNgQ2HZ+FsfhMToTSD+q7KjctR3TihbqazMWhWD6kDFwxEblHhyeIRxwO+xlVDwP71XeJLw7O5ZzpOBQ==";
             const PAYLOAD: &[u8] = b"Helm-0.0.0-x86_64-Setup.exe contents";
 
             let decode = |value: &str| {
