@@ -1,13 +1,7 @@
 /** The Helm mark: a ship's wheel, computed geometry on a 512 grid.
- *  Ink is currentColor so one component serves both themes; `brandHub` paints
- *  the centre with the brand colour where the mark is shown large. */
-export function HelmMark({
-  className,
-  brandHub = false,
-}: {
-  className?: string
-  brandHub?: boolean
-}) {
+ *  One mark everywhere -- ink is currentColor, so it takes the colour of
+ *  whatever it sits in and there is no second variant to keep in step. */
+export function HelmMark({ className }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 512 512"
@@ -37,7 +31,7 @@ export function HelmMark({
         cx="256"
         cy="256"
         r="36"
-        fill={brandHub ? 'var(--brand)' : 'currentColor'}
+        fill="currentColor"
         stroke="none"
       />
     </svg>

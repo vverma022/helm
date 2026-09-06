@@ -257,3 +257,29 @@
     mask-image: none;
   }
 }
+
+/* The bar has no edge of its own. A masked pseudo-element carries the blur and
+   a fade to transparent, so the header dissolves into the page instead of
+   sitting on it behind a rule. */
+.header-blend::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklch, var(--background) 88%, transparent),
+    color-mix(in oklch, var(--background) 42%, transparent) 62%,
+    transparent
+  );
+  -webkit-mask-image: linear-gradient(to bottom, #000 46%, transparent);
+  mask-image: linear-gradient(to bottom, #000 46%, transparent);
+  opacity: 0;
+  transition: opacity 320ms ease;
+}
+
+.header-blend[data-scrolled='true']::before {
+  opacity: 1;
+}

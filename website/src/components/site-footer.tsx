@@ -46,7 +46,7 @@ export function SiteFooter({
         <div className="grid gap-12 md:grid-cols-[1.4fr_repeat(3,1fr)]">
           <div className="max-w-xs">
             <div className="flex items-center gap-2.5">
-              <HelmMark brandHub className="size-6" />
+              <HelmMark className="size-6" />
               <span className="text-base font-semibold tracking-tight">
                 Helm
               </span>

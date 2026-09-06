@@ -25,14 +25,10 @@ export function SiteHeader({
 
   return (
     <header
-      className={[
-        'sticky top-0 z-40 transition-[background-color,border-color,backdrop-filter] duration-300',
-        scrolled
-          ? 'border-b border-border/60 bg-background/70 backdrop-blur-xl'
-          : 'border-b border-transparent bg-transparent',
-      ].join(' ')}
+      data-scrolled={scrolled}
+      className="header-blend sticky top-0 z-40 isolate"
     >
-      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6 lg:px-8">
+      <div className="relative mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6 lg:px-8">
         <Link
           to="/"
           className="flex items-center gap-2.5 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
