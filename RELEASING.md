@@ -7,7 +7,35 @@ the native Linux and Windows updaters read architecture-specific feeds and
 verify artifacts with the same EdDSA key. One release workflow produces all
 platform artifacts and feeds.
 
-Once set up, cutting a release is:
+Cutting a release is a merge. Put `(RELEASE)` in the merge commit's subject
+and [`release-on-merge.yml`](.github/workflows/release-on-merge.yml) does the
+rest — bump the version, close the changelog against it, and start the build:
+
+| Subject contains | 0.1.17 becomes |
+| --- | --- |
+| `(RELEASE)` | `0.1.18` |
+| `(RELEASE minor)` | `0.2.0` |
+| `(RELEASE major)` | `1.0.0` |
+
+Only the subject's first line is read, so a body that happens to mention the
+word cannot turn a patch into a major. A subject carrying `(RELEASE` in any
+other shape fails the run rather than guessing.
+
+The run refuses to start unless `CHANGELOG.md` has a `## [unreleased]`
+section with entries under it. Sparkle shows the section matching the version
+being released, so an empty one would ship a blank update prompt to everyone;
+that guard is also what stops a second release riding the empty section the
+previous one just opened.
+
+`Cargo.toml` is the single source of truth for the version — `release.ts`,
+`release.yml` and the website's download fallback all derive from it — so the
+workflow bumping it is what makes every other surface agree. Nothing needs
+editing by hand.
+
+To run the same build without a merge, dispatch
+[`release.yml`](.github/workflows/release.yml) directly; it releases whatever
+`Cargo.toml` currently names and skips a version that is already published.
+Locally, the equivalent is:
 
 ```sh
 bun run release
