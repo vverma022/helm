@@ -2,27 +2,22 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { Menu } from '@base-ui/react/menu'
 import {
-  Command,
   Download,
-  HardDrive,
-  History,
+  GitBranch,
+  Keyboard,
   Layers,
-  RefreshCw,
+  ShieldCheck,
   Zap,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { SiteHeader } from '@/components/site-header'
+import { SiteFooter } from '@/components/site-footer'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 import {
   FALLBACK_DOWNLOAD_URL,
   WINDOWS_ARCHITECTURES,
@@ -39,14 +34,15 @@ export const Route = createFileRoute('/')({
   component: Home,
 })
 
-const WINDOWS_DOCS_URL =
-  'https://github.com/vverma022/helm/blob/main/docs/windows.md'
+const REPO_URL = 'https://github.com/vverma022/helm'
+const WINDOWS_DOCS_URL = `${REPO_URL}/blob/main/docs/windows.md`
+const LINUX_DOCS_URL = `${REPO_URL}/blob/main/docs/linux.md`
 
 const PROVIDERS = [
-  { slug: 'amp', label: 'Amp' },
   { slug: 'claude', label: 'Claude Code' },
   { slug: 'openai', label: 'Codex' },
   { slug: 'cursor', label: 'Cursor' },
+  { slug: 'amp', label: 'Amp' },
   { slug: 'opencode', label: 'OpenCode' },
   { slug: 'grok', label: 'Grok' },
   { slug: 'pi', label: 'Pi' },
@@ -57,59 +53,60 @@ const FEATURES = [
   {
     icon: Zap,
     title: 'Native down to the frame',
-    body: 'Rust and GPUI — the GPU-accelerated framework behind Zed. Instant launch, smooth scrolling through years of transcript, no Electron.',
+    body: 'Rust and GPUI, the framework behind Zed. One binary, instant launch, and smooth scrolling through years of transcript.',
   },
   {
     icon: Layers,
     title: 'Every agent, one timeline',
-    body: 'Each agent is connected over its strongest native interface — stream-json, JSON-RPC, live events — and normalized into one provider-neutral model.',
+    body: 'Each CLI is driven over its strongest native interface — stream-json, JSON-RPC, server-sent events — then normalised into one model.',
   },
   {
-    icon: History,
+    icon: GitBranch,
     title: 'Rewind that means it',
-    body: 'Every prompt checkpoints your working tree under a hidden git ref. Roll back the code and the provider conversation together, not just the chat log.',
+    body: 'Every prompt checkpoints your tree under a hidden git ref, so you roll back code and conversation together, not just the chat log.',
   },
   {
-    icon: Command,
-    title: 'Keyboard first',
-    body: '⌘N starts a session, ⏎ queues a follow-up while the agent works, ⌘⏎ steers it mid-turn, Escape stops. Every control works without a mouse.',
-  },
-  {
-    icon: HardDrive,
+    icon: ShieldCheck,
     title: 'Local by architecture',
-    body: 'Projects, sessions, transcripts, and provider IDs live on your disk. No account, no telemetry, no Helm cloud between you and your agents.',
+    body: 'Projects, sessions and transcripts live on your disk. No account, no telemetry, nothing between you and the agents you pay for.',
   },
   {
-    icon: RefreshCw,
+    icon: Keyboard,
+    title: 'Keyboard first',
+    body: 'Start a session, queue a follow-up mid-turn, steer the agent, stop it. Every control works without reaching for the mouse.',
+  },
+  {
+    icon: Download,
     title: 'Quietly current',
-    body: 'Signed, notarized, and auto-updated with binary deltas via Sparkle. The app stays fresh without asking for your attention.',
+    body: 'Signed, notarised and updated with binary deltas in the background. The app stays fresh without asking for your attention.',
   },
 ]
+
 
 const FAQ = [
   {
     q: 'Is this another Electron app?',
-    a: 'No. Helm is a single Rust binary rendered by GPUI, the UI framework Zed is built on. The window you see is drawn by the GPU, not by a browser engine.',
+    a: 'No. Helm is a single Rust binary rendered by GPUI, the UI framework Zed is built on. The window is drawn by the GPU, not by a browser engine.',
   },
   {
     q: 'Do I need new API keys?',
-    a: 'No. Helm detects amp, claude, codex, cursor-agent, opencode, grok, pi, and kimi on your machine and drives them directly — your existing logins, plans, and rate limits apply unchanged.',
+    a: 'No. Helm detects amp, claude, codex, cursor-agent, opencode, grok, pi and kimi on your machine and drives them directly. Your existing logins, plans and rate limits apply unchanged.',
   },
   {
     q: 'Where does my data live?',
-    a: 'On your machine. Projects, sessions, transcripts, and provider session IDs are stored locally. There is no Helm account and no telemetry.',
+    a: 'On your machine. Projects, sessions, transcripts and provider session IDs are stored locally. There is no Helm account and no telemetry.',
   },
   {
-    q: 'What is the future plan?',
-    a: 'A mobile app for remote control, and cloud agents are planned',
+    q: 'What is planned next?',
+    a: 'A mobile app for driving sessions remotely, and support for cloud agents.',
   },
 ]
 
-function SectionLabel({ children }: { children: ReactNode }) {
+function Eyebrow({ children }: { children: ReactNode }) {
   return (
-    <div className="font-mono text-[11px] tracking-[0.14em] text-muted-foreground/80 uppercase">
+    <p className="font-mono text-[11px] tracking-[0.18em] text-brand uppercase">
       {children}
-    </div>
+    </p>
   )
 }
 
@@ -120,20 +117,24 @@ function DownloadMenu({
   align,
   className,
   showIcon = false,
+  variant = 'default',
 }: {
   downloadUrl: string
   version?: string
   size: 'sm' | 'lg'
-  align: 'start' | 'end'
+  align: 'start' | 'end' | 'center'
   className?: string
   showIcon?: boolean
+  variant?: 'default' | 'brand'
 }) {
   const itemClassName =
     'flex h-8 cursor-default items-center rounded-md px-2.5 text-sm outline-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-45'
 
   return (
     <Menu.Root>
-      <Menu.Trigger render={<Button size={size} className={className} />}>
+      <Menu.Trigger
+        render={<Button variant={variant} size={size} className={className} />}
+      >
         {showIcon && <Download data-icon="inline-start" />}
         Download
       </Menu.Trigger>
@@ -153,7 +154,7 @@ function DownloadMenu({
               macOS (Apple Silicon)
             </Menu.LinkItem>
             <Menu.LinkItem
-              href="https://github.com/vverma022/helm/blob/main/docs/linux.md"
+              href={LINUX_DOCS_URL}
               target="_blank"
               rel="noreferrer"
               closeOnClick
@@ -165,9 +166,7 @@ function DownloadMenu({
               <Menu.LinkItem
                 key={arch}
                 href={
-                  version
-                    ? windowsInstallerUrl(version, arch)
-                    : WINDOWS_DOCS_URL
+                  version ? windowsInstallerUrl(version, arch) : WINDOWS_DOCS_URL
                 }
                 closeOnClick
                 className={itemClassName}
@@ -187,114 +186,86 @@ function Home() {
   const downloadUrl = release?.url ?? FALLBACK_DOWNLOAD_URL
 
   return (
-    <TooltipProvider>
-      <div className="min-h-dvh antialiased">
-        <div className="mx-auto w-full max-w-[1100px] border-border/70 md:border-x">
-          {/* Header */}
-          <header className="flex h-16 items-center justify-between px-5 md:px-10">
-            <a href="/" className="flex items-center gap-2.5">
-              <img
-                src="/app-icon.png"
-                alt=""
-                className="size-8 rounded-[6px]"
-              />
-              <span className="text-[15px] font-semibold tracking-tight">
-                Helm
-              </span>
-            </a>
-            <div className="flex items-center gap-5">
-              <a
-                href="https://github.com/vverma022/helm"
-                target="_blank"
-                rel="noreferrer"
-                aria-label="GitHub"
-                className="rounded-full text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  className='size-6'
-                >
-                  <path
-                    fill="currentColor"
-                    d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33s1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2"
-                  />
-                </svg>
-              </a>
+    <div className="min-h-dvh antialiased">
+      <SiteHeader
+        repoUrl={REPO_URL}
+        action={
+          <DownloadMenu
+            downloadUrl={downloadUrl}
+            version={release?.version}
+            size="sm"
+            align="end"
+          />
+        }
+      />
+
+      <main>
+        {/* Hero. Centred so the composition fills the width, with the product
+            shot pulled up tight beneath it rather than floating in dead space. */}
+        <section className="hero-glow relative isolate overflow-hidden">
+          <div className="mx-auto w-full max-w-6xl px-6 pt-20 text-center md:pt-28 lg:px-8">
+            <div className="rise inline-flex items-center gap-2 rounded-full border border-border/80 bg-muted/40 px-3 py-1 font-mono text-[11px] tracking-wide text-muted-foreground">
+              <span className="size-1.5 rounded-full bg-brand" />
+              macOS · Linux · Windows
+            </div>
+
+            <h1
+              className="rise mx-auto mt-7 max-w-4xl text-[2.75rem] leading-[1.02] font-semibold tracking-[-0.04em] text-balance md:text-[4.25rem]"
+              style={{ animationDelay: '70ms' }}
+            >
+              One place to <span className="serif text-brand">steer</span> all
+              your agents.
+            </h1>
+
+            <p
+              className="rise mx-auto mt-6 max-w-xl text-[17px] leading-relaxed text-pretty text-muted-foreground md:text-lg"
+              style={{ animationDelay: '140ms' }}
+            >
+              Helm drives the agent CLIs already on your machine — sessions,
+              transcripts, tool activity and checkpoints in one fast native
+              window, with nothing sent anywhere.
+            </p>
+
+            <div
+              className="rise mt-9 flex flex-wrap items-center justify-center gap-3"
+              style={{ animationDelay: '210ms' }}
+            >
               <DownloadMenu
                 downloadUrl={downloadUrl}
                 version={release?.version}
-                size="sm"
-                align="end"
+                size="lg"
+                className="h-11 px-5"
+                align="center"
+                showIcon
+                variant="brand"
               />
+              <a
+                href={REPO_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="flex h-11 items-center rounded-lg border border-border px-5 text-sm font-medium transition-colors hover:bg-muted"
+              >
+                View source
+              </a>
             </div>
-          </header>
 
-          <main>
-            {/* Hero */}
-            <section className="px-5 pt-14 pb-14 md:px-10 md:pt-24">
-              <div className="mb-7 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs text-muted-foreground">
-                <span className="flex size-3.5 items-center justify-center rounded-[3px] bg-[#f26522] text-[10px] font-bold text-white">
-                  Y
-                </span>
-                Not backed by Y Combinator
-              </div>
-              <h1 className="max-w-4xl text-4xl font-semibold tracking-[-0.03em] text-balance md:text-[3.4rem] md:leading-[1.04]">
-                One native app for all your coding agents.
-              </h1>
-              <p className="mt-5 max-w-[36rem] text-[17px] leading-relaxed text-pretty text-muted-foreground">
-                Helm drives the agent CLIs you already have — sessions,
-                transcripts, tool activity, and checkpoints in one fast
-                graphite window, entirely on your machine.
-              </p>
-              <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
-                <DownloadMenu
-                  downloadUrl={downloadUrl}
-                  version={release?.version}
-                  size="lg"
-                  className="h-10 px-4"
-                  align="start"
-                  showIcon
-                />
-                {release && (
-                  <span className="font-mono text-xs text-muted-foreground">
-                    v{release.version}
-                  </span>
-                )}
-              </div>
+            <p
+              className="rise mt-4 font-mono text-xs text-muted-foreground"
+              style={{ animationDelay: '260ms' }}
+            >
+              {release
+                ? `v${release.version} · free and open source`
+                : 'Free and open source'}
+            </p>
+          </div>
 
-              {/* Providers */}
-              <div className="mt-16">
-                <SectionLabel>Drives the agents you already use</SectionLabel>
-                <div className="mt-4 flex flex-wrap items-center gap-x-7 gap-y-4">
-                  {PROVIDERS.map((p) => (
-                    <Tooltip key={p.slug}>
-                      <TooltipTrigger
-                        render={
-                          <button
-                            type="button"
-                            aria-label={p.label}
-                            className="cursor-default rounded-sm text-muted-foreground/70 transition-colors outline-none hover:text-foreground focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
-                          />
-                        }
-                      >
-                        <span
-                          className="provider-mark size-[22px]"
-                          style={{
-                            maskImage: `url(/providers/${p.slug}.svg)`,
-                            WebkitMaskImage: `url(/providers/${p.slug}.svg)`,
-                          }}
-                        />
-                      </TooltipTrigger>
-                      <TooltipContent>{p.label}</TooltipContent>
-                    </Tooltip>
-                  ))}
-                </div>
-              </div>
-            </section>
-
-            {/* Product */}
-            <section>
+          {/* Product shot, cropped to the app window and bled off the bottom so
+              the hero reads as one block rather than two. */}
+          <div
+            className="rise mx-auto mt-14 w-full max-w-6xl px-6 lg:px-8"
+            style={{ animationDelay: '320ms' }}
+          >
+            <div className="shot">
               <picture>
                 <source
                   media="(prefers-color-scheme: dark)"
@@ -302,86 +273,118 @@ function Home() {
                 />
                 <img
                   src="/app-screenshot-light.png"
-                  alt="Helm showing a coding-agent session"
-                  width={2266}
-                  height={1752}
+                  alt="Helm showing a coding-agent session with its transcript and tool activity"
+                  width={1950}
+                  height={1440}
                   className="block h-auto w-full"
                 />
               </picture>
-            </section>
+            </div>
+          </div>
+        </section>
 
-            {/* Features */}
-            <section className="border-t">
-              <div className="px-5 pt-14 md:px-10">
-                <SectionLabel>Why native</SectionLabel>
-              </div>
-              <div className="mt-8 grid grid-cols-1 gap-px border-t bg-border/70 sm:grid-cols-2 lg:grid-cols-3">
-                {FEATURES.map((f) => (
-                  <div key={f.title} className="bg-background p-6 md:p-8">
-                    <div className="flex items-center gap-2.5">
-                      <f.icon className="size-4 text-muted-foreground" />
-                      <h3 className="text-sm font-medium">{f.title}</h3>
+        {/* Providers scroll past on their own. No band colour: the section
+            sits on the page ground so it blends instead of reading as a strip. */}
+        <section id="works-with" className="mt-24 scroll-mt-20 md:mt-36">
+          <div className="mx-auto mb-12 w-full max-w-6xl px-6 text-center lg:px-8">
+            <Eyebrow>Works with</Eyebrow>
+            <h2 className="mx-auto mt-4 max-w-2xl text-3xl font-semibold tracking-[-0.03em] text-balance md:text-[2.5rem]">
+              Every agent you <span className="serif">already</span> use.
+            </h2>
+            <p className="mx-auto mt-5 max-w-lg text-[15px] leading-relaxed text-muted-foreground">
+              Helm drives the CLIs you have installed, over each one&apos;s own
+              native protocol. Your logins, plans and rate limits carry over
+              unchanged.
+            </p>
+          </div>
+          <div className="marquee overflow-hidden">
+            <div className="marquee-track">
+              {[0, 1].map((copy) => (
+                <div
+                  key={copy}
+                  aria-hidden={copy === 1}
+                  className="flex shrink-0 items-center gap-x-12 pr-12"
+                >
+                  {PROVIDERS.map((p) => (
+                    <div
+                      key={p.slug}
+                      className="flex items-center gap-2.5 text-muted-foreground"
+                    >
+                      <span
+                        className="provider-mark size-5"
+                        style={{
+                          maskImage: `url(/providers/${p.slug}.svg)`,
+                          WebkitMaskImage: `url(/providers/${p.slug}.svg)`,
+                        }}
+                      />
+                      <span className="text-sm whitespace-nowrap">{p.label}</span>
                     </div>
-                    <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
-                      {f.body}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </section>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
 
-            {/* Download */}
-            <section id="download" className="border-t px-5 py-16 md:px-10 md:py-20">
-              <SectionLabel>Download</SectionLabel>
-              <h2 className="mt-3 text-2xl font-semibold tracking-tight">
-                Get Helm
+        {/* Features: a real grid with hairline dividers, so the section has
+            structure instead of six paragraphs floating in space. */}
+        <section id="features" className="scroll-mt-16">
+          <div className="mx-auto w-full max-w-6xl px-6 pt-20 pb-10 lg:px-8">
+            <Eyebrow>Why native</Eyebrow>
+            <h2 className="mt-4 max-w-2xl text-3xl font-semibold tracking-[-0.03em] text-balance md:text-[2.5rem]">
+              Built like a desktop app, because it <span className="serif">is</span> one.
+            </h2>
+          </div>
+          <div className="mx-auto w-full max-w-6xl px-6 pb-20 lg:px-8">
+            <div className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-2 lg:grid-cols-3">
+              {FEATURES.map((f) => (
+                <div
+                  key={f.title}
+                  className="bg-background p-7 transition-colors hover:bg-muted/40"
+                >
+                  <f.icon className="size-[18px] text-brand" strokeWidth={1.75} />
+                  <h3 className="mt-4 text-[15px] font-medium tracking-tight">
+                    {f.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    {f.body}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="faq" className="scroll-mt-16">
+          <div className="mx-auto grid w-full max-w-6xl gap-12 px-6 py-20 lg:grid-cols-[320px_1fr] lg:px-8">
+            <div>
+              <Eyebrow>Questions</Eyebrow>
+              <h2 className="mt-4 text-3xl font-semibold tracking-[-0.03em]">
+                Before you download.
               </h2>
-              <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
-                <DownloadMenu
-                  downloadUrl={downloadUrl}
-                  version={release?.version}
-                  size="lg"
-                  className="h-10 px-4"
-                  align="start"
-                  showIcon
-                />
-                {release && (
-                  <span className="font-mono text-xs text-muted-foreground">
-                    v{release.version}
-                  </span>
-                )}
-              </div>
-            </section>
+            </div>
+            <Accordion className="max-w-2xl">
+              {FAQ.map((item) => (
+                <AccordionItem key={item.q} value={item.q}>
+                  <AccordionTrigger className="text-[15px]">
+                    {item.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="max-w-[40rem] text-[15px] leading-relaxed text-muted-foreground">
+                    {item.a}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+        </section>
 
-            {/* FAQ */}
-            <section className="border-t px-5 py-16 md:px-10">
-              <SectionLabel>Questions</SectionLabel>
-              <Accordion className="mt-6 max-w-2xl">
-                {FAQ.map((item) => (
-                  <AccordionItem key={item.q} value={item.q}>
-                    <AccordionTrigger className="text-[15px]">
-                      {item.q}
-                    </AccordionTrigger>
-                    <AccordionContent className="max-w-[38rem] text-muted-foreground">
-                      {item.a}
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </section>
-          </main>
+      </main>
 
-          {/* Footer */}
-          <footer className="flex items-center gap-2 border-t px-5 py-10 text-xs text-muted-foreground md:px-10">
-            <img
-              src="/app-icon.png"
-              alt=""
-              className="size-4 rounded-[4px] opacity-80 grayscale"
-            />
-            <span>© 2026 Helm</span>
-          </footer>
-        </div>
-      </div>
-    </TooltipProvider>
+      <SiteFooter
+        repoUrl={REPO_URL}
+        linuxDocsUrl={LINUX_DOCS_URL}
+        windowsDocsUrl={WINDOWS_DOCS_URL}
+      />
+    </div>
   )
 }
