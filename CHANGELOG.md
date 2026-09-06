@@ -18,6 +18,8 @@ the original feature bullet instead of adding separate entries for them.
 
 ## [0.2.0]
 
+- Close a terminal without the risk of hanging: a shell that ignores the hang-up signal is now killed rather than waited on forever
+
 - Group the sidebar by project by default, and keep a section for every project you open so a new one is visible, with its own compose button, before it has any history
 - Start new tasks on a provider that is actually installed instead of always defaulting to Codex, and move off a provider whose CLI is removed or switched off
 - Show what the first run found: the welcome screen lists the agent CLIs detected on this machine and links to provider setup
