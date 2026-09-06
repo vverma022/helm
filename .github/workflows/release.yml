@@ -5,6 +5,11 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      draft:
+        description: Hold the release as a draft instead of publishing it
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -316,7 +321,28 @@ jobs:
           restore-keys: |
             macos-latest-rust-1.96.0-release-
 
+      # Without a Developer ID the build falls back to ad-hoc signing rather
+      # than failing. That is not a lesser release for update purposes:
+      # scripts/bundle.sh pins the ad-hoc designated requirement to the bundle
+      # id, so one ad-hoc build satisfies the next one's requirement and
+      # Sparkle accepts the update. Notarization only governs the *first*
+      # launch — the user right-click → Opens once, and every version after
+      # that installs itself.
+      - name: Decide how macOS can be signed
+        id: signing
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+        run: |
+          if [ -n "$APPLE_CERTIFICATE" ]; then
+            echo "adhoc=false" >> "$GITHUB_OUTPUT"
+            echo "Developer ID available; signing and notarizing."
+          else
+            echo "adhoc=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::No APPLE_CERTIFICATE — building macOS ad-hoc. Updates work; first launch needs right-click → Open."
+          fi
+
       - name: Import Apple Developer Certificate
+        if: steps.signing.outputs.adhoc != 'true'
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -333,6 +359,7 @@ jobs:
           rm certificate.p12
 
       - name: Store notary credentials
+        if: steps.signing.outputs.adhoc != 'true'
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
@@ -349,7 +376,13 @@ jobs:
           HELM_ANALYTICS_ENDPOINT: ${{ secrets.HELM_ANALYTICS_ENDPOINT }}
           HELM_ANALYTICS_WEBSITE_ID: ${{ secrets.HELM_ANALYTICS_WEBSITE_ID }}
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
-        run: bun run release --local
+          ADHOC: ${{ steps.signing.outputs.adhoc }}
+        run: |
+          if [ "$ADHOC" = "true" ]; then
+            bun run release --local --adhoc
+          else
+            bun run release --local
+          fi
 
       - uses: actions/upload-artifact@v7
         with:
@@ -452,6 +485,23 @@ jobs:
           bun scripts/appcast-linux.ts artifacts "$VERSION"
           bun scripts/appcast-windows.ts artifacts "$VERSION"
 
+          # Sparkle reads appcast.xml from releases/latest/download, so the
+          # newest release decides what every installed macOS copy sees. A
+          # release built without macOS has no appcast.xml of its own, and
+          # publishing it as latest would turn that URL into a 404 — taking
+          # update checks away from people already running the app rather
+          # than merely not offering them a new build. Carry the existing
+          # feed forward so it keeps pointing at the last macOS release.
+          if [ ! -f artifacts/appcast.xml ]; then
+            if curl -fsSL --max-time 30 \
+              "https://github.com/vverma022/helm/releases/latest/download/appcast.xml" \
+              -o artifacts/appcast.xml; then
+              echo "Carried the previous macOS appcast forward."
+            else
+              echo "::warning::No macOS appcast to carry forward; macOS update checks will 404 until a signed macOS build ships."
+            fi
+          fi
+
       - name: Write release notes
         env:
           VERSION: ${{ needs.version.outputs.version }}
@@ -463,15 +513,27 @@ jobs:
             const notes = (await file.exists())
               ? extractReleaseNotes(await file.text(), version)
               : null;
-            await Bun.write(
-              "release-notes.md",
-              `${notes ?? "See CHANGELOG.md for details."}\n`,
-            );
+            const body = notes ?? "See CHANGELOG.md for details.";
+            // Someone opening a release with no .dmg should not have to guess
+            // whether it was dropped or never built.
+            const mac = await Bun.file("artifacts/appcast.xml").exists();
+            const note = mac
+              ? ""
+              : "\n\n---\n\n**macOS is not included in this release.** " +
+                "Signing it needs an Apple Developer ID this project does not " +
+                "have yet, so only Linux and Windows are published here.";
+            await Bun.write("release-notes.md", `${body}${note}\n`);
           '
 
       - uses: softprops/action-gh-release@v3
         with:
-          draft: true
+          # Publishing here is what completes the chain: it creates the tag
+          # and triggers sync-release.yml, which puts the assets in R2 where
+          # the appcasts point. A draft stops one click short of anyone
+          # actually getting the release, so it is opt-in now — the guards
+          # that matter run earlier, refusing a version with no changelog
+          # entries or a missing Linux or Windows build.
+          draft: ${{ inputs.draft == true }}
           # A manual run has no tag yet; publishing the draft creates this one
           # at the commit that was built.
           tag_name: ${{ needs.version.outputs.tag }}
