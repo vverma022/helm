@@ -7,7 +7,10 @@ export interface LatestRelease {
   pubDate: string | null
 }
 
-const RELEASES_BASE = 'https://github.com/vverma022/helm/releases/latest/download/'
+// No trailing slash: every use below appends its own, and GitHub's release
+// redirect does not tolerate a doubled separator.
+const RELEASES_BASE =
+  'https://github.com/vverma022/helm/releases/latest/download'
 
 // Versioned artifact names are a stable contract and old archives stay in R2
 // (see RELEASING.md), so a known-published version is a safe fallback while
