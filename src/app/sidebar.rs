@@ -69,6 +69,8 @@ pub(super) enum SidebarGroup {
     Updated(SessionDateGroup),
     Project(Uuid),
     Projectless,
+    /// Tasks past the archive threshold, in either grouping mode.
+    Archived,
 }
 
 impl SidebarGroup {
@@ -77,6 +79,7 @@ impl SidebarGroup {
             Self::Updated(group) => format!("updated-{}", group.index()).into(),
             Self::Project(project_id) => format!("project-{project_id}").into(),
             Self::Projectless => "projectless".into(),
+            Self::Archived => "archived".into(),
         }
     }
 
@@ -85,6 +88,7 @@ impl SidebarGroup {
             Self::Updated(group) => mix(fingerprint, group.index() as u64 + 1),
             Self::Project(project_id) => mix_uuid(mix(fingerprint, 0x100), project_id),
             Self::Projectless => mix(fingerprint, 0x200),
+            Self::Archived => mix(fingerprint, 0x300),
         }
     }
 }
@@ -250,6 +254,27 @@ pub(super) fn session_time_label(session: &AgentSession, now: u64) -> Option<Str
 /// no turns stays anchored to when it was created.
 fn sidebar_session_timestamp(session: &AgentSession) -> u64 {
     session.last_reply_at.unwrap_or(session.created_at)
+}
+
+/// Whether a task has been quiet long enough to fall behind the archive fold.
+///
+/// Derived on every read rather than stored: no column, no sweep, and nothing
+/// deleted, so lowering or clearing the threshold brings tasks straight back.
+/// A busy task is never archived however old its last reply — it is working
+/// now, and hiding it would lose the one row the user is waiting on.
+pub(super) fn session_is_archived(
+    session: &AgentSession,
+    now: u64,
+    after_days: Option<u32>,
+) -> bool {
+    let Some(days) = after_days else {
+        return false;
+    };
+    if session.status.is_busy() {
+        return false;
+    }
+    let window = u64::from(days).saturating_mul(86_400);
+    sidebar_session_timestamp(session) < now.saturating_sub(window)
 }
 
 fn sort_sidebar_sessions(sessions: &mut Vec<&AgentSession>, ordering: SidebarOrdering) {
@@ -1185,10 +1210,24 @@ impl Helm {
                 SidebarOrdering::Oldest => 2,
             },
         );
+        fingerprint = mix(
+            fingerprint,
+            self.state
+                .archive_after_days
+                .map_or(0, |days| u64::from(days).saturating_add(1)),
+        );
         for session in &self.state.sessions {
             if !session.has_started() {
                 continue;
             }
+            fingerprint = mix(
+                fingerprint,
+                u64::from(session_is_archived(
+                    session,
+                    now,
+                    self.state.archive_after_days,
+                )),
+            );
             fingerprint = mix_uuid(fingerprint, session.id);
             fingerprint = mix_uuid(fingerprint, session.project_id);
             fingerprint = mix(fingerprint, sidebar_session_timestamp(session));
@@ -1246,6 +1285,17 @@ impl Helm {
             .filter(|session| session.has_started())
             .collect::<Vec<_>>();
         sort_sidebar_sessions(&mut sorted_sessions, self.state.sidebar_ordering);
+        let archive_after_days = self.state.archive_after_days;
+        let (sorted_sessions, archived) =
+            sorted_sessions
+                .into_iter()
+                .partition::<Vec<_>, _>(|session| {
+                    !session_is_archived(session, now, archive_after_days)
+                });
+        let archived = archived
+            .into_iter()
+            .map(|session| session.id)
+            .collect::<Vec<_>>();
 
         let mut rows = vec![SidebarRow::Search];
         match self.state.sidebar_grouping {
@@ -1345,6 +1395,14 @@ impl Helm {
             };
             rows.push(SidebarRow::Header(group));
         }
+        append_sidebar_group_rows(
+            &mut rows,
+            SidebarGroup::Archived,
+            &archived,
+            self.sidebar_collapsed_groups
+                .contains(&SidebarGroup::Archived),
+            false,
+        );
         rows
     }
 
@@ -1438,15 +1496,19 @@ impl Helm {
                 .map(Project::display_name)
                 .unwrap_or_else(|| tr!("project.no_project_name")),
             SidebarGroup::Projectless => tr!("project.no_project_name"),
+            SidebarGroup::Archived => tr!("sidebar.group_archived"),
         };
-        let updated_chevron = matches!(group, SidebarGroup::Updated(_)).then(|| {
-            icon("icons/chevron-down.svg", 14.0, theme.text_secondary)
-                .when(collapsed, |icon| {
-                    icon.with_transformation(gpui::Transformation::rotate(gpui::percentage(0.75)))
-                })
-                .invisible()
-                .group_hover(group_name.clone(), |icon| icon.visible())
-        });
+        let updated_chevron = matches!(group, SidebarGroup::Updated(_) | SidebarGroup::Archived)
+            .then(|| {
+                icon("icons/chevron-down.svg", 14.0, theme.text_secondary)
+                    .when(collapsed, |icon| {
+                        icon.with_transformation(gpui::Transformation::rotate(gpui::percentage(
+                            0.75,
+                        )))
+                    })
+                    .invisible()
+                    .group_hover(group_name.clone(), |icon| icon.visible())
+            });
         // An expanded section with nothing under it is an empty project, where
         // the compose button is the only thing to do. Hover-to-reveal would
         // leave that row looking like a dead end, so it stays visible.
@@ -1606,7 +1668,7 @@ impl Helm {
         match group {
             SidebarGroup::Project(project_id) => self.select_project(project_id, cx),
             SidebarGroup::Projectless => self.create_projectless_session(cx),
-            SidebarGroup::Updated(_) => return,
+            SidebarGroup::Updated(_) | SidebarGroup::Archived => return,
         }
         let focus = self.composer_focus(cx);
         window.focus(&focus, cx);
@@ -1839,6 +1901,9 @@ impl Helm {
             session.status,
             SessionStatus::Connecting | SessionStatus::Working
         );
+        // Every sidebar row has already run, so an idle one has finished rather
+        // than never having been prompted.
+        let started = session.has_started();
         let project = self
             .state
             .projects
@@ -1961,33 +2026,28 @@ impl Helm {
                     .overflow_hidden()
                     .line_height(sp(18.0))
                     .child(title)
-                    .when(working, |element| {
-                        element.child(motion::spin_slow(icon(
-                            "icons/loader-circle.svg",
-                            12.0,
-                            status_color(&theme, session.status),
-                        )))
-                    })
-                    .when(session.status == SessionStatus::Background, |element| {
-                        element.child(icon(
-                            "icons/hourglass.svg",
-                            12.0,
-                            status_color(&theme, session.status),
-                        ))
-                    })
-                    .when(session.status == SessionStatus::Waiting, |element| {
-                        element.child(icon(
-                            "icons/alert.svg",
-                            12.0,
-                            status_color(&theme, session.status),
-                        ))
-                    })
-                    .when(session.status == SessionStatus::Failed, |element| {
-                        element.child(icon(
-                            "icons/x.svg",
-                            12.0,
-                            status_color(&theme, session.status),
-                        ))
+                    .when_some(status_icon(session.status, started), |element, path| {
+                        let glyph = icon(path, 12.0, status_color(&theme, session.status, started));
+                        let glyph = if working {
+                            motion::spin_slow(glyph).into_any_element()
+                        } else {
+                            glyph.into_any_element()
+                        };
+                        // A bare glyph is unexplainable without a
+                        // screen-reader tree; hover is how the vocabulary is
+                        // learned.
+                        element.child(
+                            div()
+                                .id(SharedString::from(format!("status-{session_id}")))
+                                .flex_none()
+                                .flex()
+                                .items_center()
+                                .when_some(
+                                    status_label(session.status, started),
+                                    |element, label| element.tooltip(Tooltip::text(label)),
+                                )
+                                .child(glyph),
+                        )
                     }),
             )
             .child(

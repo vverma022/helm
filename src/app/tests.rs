@@ -4,6 +4,7 @@ use super::composer::{
 };
 use super::runtime::{merge_remote_session_catalog, session_has_active_provider_turn};
 use super::settings::visible_settings_pages;
+use super::sidebar::session_is_archived;
 use super::{
     ESCAPE_STOP_CONFIRMATION_TIMEOUT, EscapeStopConfirmation, EscapeStopPress, EscapeStopTarget,
     NAVIGATION_RAIL_TICK_HEIGHT, NAVIGATION_RAIL_TURN_HEIGHT, PendingUserInput, SessionNavigation,
@@ -28,6 +29,7 @@ use crate::model::{
     DriverEvent, Message, MessageRole, ProviderKind, ReasoningBlock, RuntimeEventCursor,
     SessionStatus, TranscriptBlock, TurnStatus, UserInputOption, UserInputQuestion,
 };
+use crate::ui::status_icon;
 
 #[test]
 fn structured_user_input_preserves_question_order_and_custom_answer_precedence() {
@@ -2248,4 +2250,91 @@ fn the_rail_draws_only_installed_providers_the_settings_left_on() {
         Some(ProviderKind::Claude),
         ProviderKind::Claude
     ));
+}
+
+#[test]
+fn status_icon_reports_an_outcome_only_once_a_task_has_run() {
+    // The gap this closes: idle is both "finished" and "never prompted", and
+    // only the first has an outcome worth drawing.
+    assert_eq!(status_icon(SessionStatus::Idle, false), None);
+    assert_eq!(
+        status_icon(SessionStatus::Idle, true),
+        Some("icons/check.svg")
+    );
+
+    // Every other status reports the same glyph whether or not a turn has
+    // landed — being busy or failed already implies the task ran.
+    for started in [false, true] {
+        assert_eq!(
+            status_icon(SessionStatus::Working, started),
+            Some("icons/loader-circle.svg")
+        );
+        assert_eq!(
+            status_icon(SessionStatus::Connecting, started),
+            Some("icons/loader-circle.svg")
+        );
+        assert_eq!(
+            status_icon(SessionStatus::Background, started),
+            Some("icons/hourglass.svg")
+        );
+        assert_eq!(
+            status_icon(SessionStatus::Waiting, started),
+            Some("icons/alert.svg")
+        );
+        assert_eq!(
+            status_icon(SessionStatus::Failed, started),
+            Some("icons/x.svg")
+        );
+    }
+}
+
+#[test]
+fn archiving_is_derived_from_idle_age_and_never_hides_live_work() {
+    const DAY: u64 = 86_400;
+    let now = 100 * DAY;
+    let aged = |last_reply: u64| {
+        let mut session = AgentSession::new(Uuid::new_v4(), ProviderKind::Codex);
+        session.last_reply_at = Some(last_reply);
+        session
+    };
+
+    // No threshold set keeps everything, however old.
+    assert!(!session_is_archived(&aged(0), now, None));
+
+    // The boundary: exactly at the threshold is still visible, past it folds.
+    let boundary = aged(now - 30 * DAY);
+    assert!(!session_is_archived(&boundary, now, Some(30)));
+    assert!(session_is_archived(
+        &aged(now - 30 * DAY - 1),
+        now,
+        Some(30)
+    ));
+    assert!(!session_is_archived(&aged(now - 29 * DAY), now, Some(30)));
+
+    // A task still working is never archived, however stale its last reply.
+    // Hiding it would lose the one row the user is waiting on.
+    for status in [
+        SessionStatus::Working,
+        SessionStatus::Connecting,
+        SessionStatus::Waiting,
+        SessionStatus::Background,
+    ] {
+        let mut busy = aged(0);
+        busy.status = status;
+        assert!(
+            !session_is_archived(&busy, now, Some(7)),
+            "{status:?} must stay visible"
+        );
+    }
+
+    // Failed is terminal, so it archives like an idle task.
+    let mut failed = aged(0);
+    failed.status = SessionStatus::Failed;
+    assert!(session_is_archived(&failed, now, Some(7)));
+
+    // A task that never replied falls back to its creation time.
+    let mut fresh = AgentSession::new(Uuid::new_v4(), ProviderKind::Codex);
+    fresh.created_at = now;
+    fresh.last_reply_at = None;
+    assert!(!session_is_archived(&fresh, now, Some(7)));
 }

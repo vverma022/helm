@@ -63,7 +63,8 @@ use crate::theme::{AccentPreference, Theme, ThemePreference, sp};
 use crate::ui::text_field::TextField;
 use crate::ui::{
     MenuChip, ProjectNameSelector, activity_icon, activity_noun, contain_scroll, file_icon, icon,
-    icon_button, motion, provider_color, provider_icon, status_color, toggle_switch,
+    icon_button, motion, provider_color, provider_icon, status_color, status_icon, status_label,
+    toggle_switch,
 };
 use crate::{
     CancelTaskSwitch, CancelTurn, CloseFind, CloseWindow, ConfirmTaskSwitch, CopySelection,
@@ -2870,7 +2871,8 @@ impl Helm {
                 session_navigation,
                 session_rename: None,
                 session_rename_input,
-                sidebar_collapsed_groups: HashSet::new(),
+                // The archive fold opens collapsed; that is the point of it.
+                sidebar_collapsed_groups: HashSet::from([SidebarGroup::Archived]),
                 sidebar_project_reveal_counts: HashMap::new(),
                 sidebar_group_header_focuses: RefCell::new(HashMap::new()),
                 sidebar_group_compose_focuses: RefCell::new(HashMap::new()),

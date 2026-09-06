@@ -287,6 +287,10 @@ pub struct PersistedState {
     /// detect from PATH.
     #[serde(default)]
     pub provider_binary_overrides: HashMap<ProviderKind, String>,
+    /// Hide tasks idle for longer than this behind a collapsed sidebar group.
+    /// `None` archives nothing.
+    #[serde(default)]
+    pub archive_after_days: Option<u32>,
     /// Unknown daemon settings survive edits made by this desktop version.
     #[serde(skip)]
     daemon_settings_extra: BTreeMap<String, serde_json::Value>,
@@ -346,6 +350,7 @@ impl PersistedState {
             computer_use_allowed_apps: Vec::new(),
             disabled_providers: Vec::new(),
             provider_binary_overrides: HashMap::new(),
+            archive_after_days: None,
             daemon_settings_extra: BTreeMap::new(),
             dirty_sessions: HashSet::new(),
         }
@@ -443,6 +448,7 @@ impl PersistedState {
             computer_use_allowed_apps: self.computer_use_allowed_apps.clone(),
             disabled_providers: self.disabled_providers.clone(),
             provider_binary_overrides: self.provider_binary_overrides.clone(),
+            archive_after_days: self.archive_after_days,
             extra: self.daemon_settings_extra.clone(),
         }
     }
@@ -478,6 +484,7 @@ impl PersistedState {
         self.computer_use_allowed_apps = settings.computer_use_allowed_apps;
         self.disabled_providers = settings.disabled_providers;
         self.provider_binary_overrides = settings.provider_binary_overrides;
+        self.archive_after_days = settings.archive_after_days;
         self.daemon_settings_extra = settings.extra;
     }
 

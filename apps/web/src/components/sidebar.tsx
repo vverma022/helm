@@ -12,6 +12,7 @@ import { useI18n } from '@/lib/i18n'
 import {
   groupSessions,
   nextSidebarUpdateDelay,
+  sessionHasStarted,
   sessionTimeLabel,
   sidebarRows,
   type DateGroup,
@@ -363,7 +364,7 @@ function SessionRow({
                   }
                 }}
               />
-              <SessionStatus status={item.session.status} t={t} />
+              <SessionStatus session={item.session} t={t} />
             </span>
             <SessionMetadata item={item} nowSeconds={nowSeconds} t={t} />
           </div>
@@ -387,7 +388,7 @@ function SessionRow({
               <span className="min-w-0 flex-1 truncate text-[13.5px] text-foreground">
                 {currentTitle}
               </span>
-              <SessionStatus status={item.session.status} t={t} />
+              <SessionStatus session={item.session} t={t} />
             </span>
             <SessionMetadata item={item} nowSeconds={nowSeconds} t={t} />
           </button>
@@ -447,8 +448,15 @@ function SessionMetadata({ item, nowSeconds, t }: { item: SessionItem; nowSecond
   )
 }
 
-function SessionStatus({ status, t }: { status: AgentSession['status']; t: Translator }) {
-  if (status === 'idle') return null
+function SessionStatus({ session, t }: { session: AgentSession; t: Translator }) {
+  const status = session.status
+  // Idle covers both "finished" and "never prompted"; only the first has an
+  // outcome to report. Mirrors AgentSession::has_started on the Rust side.
+  if (status === 'idle') {
+    return sessionHasStarted(session)
+      ? <HelmIcon label={t('sidebar.status_done')} className="size-3 text-[var(--success)]" name="check" />
+      : null
+  }
   if (status === 'working' || status === 'connecting') {
     return <HelmIcon label={t('sidebar.status_working')} className="size-3 text-[var(--success)] motion-safe:animate-spin" name="loaderCircle" />
   }

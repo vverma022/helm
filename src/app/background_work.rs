@@ -2,6 +2,9 @@ use super::*;
 
 const MAX_BACKGROUND_OUTPUT_BYTES: usize = 512 * 1024;
 const MAX_SETTLED_BACKGROUND_ITEMS: usize = 24;
+/// Horizontal step per level of the spawn tree, and where indenting stops.
+const SPAWN_INDENT: f32 = 14.0;
+const SPAWN_MAX_INDENT_LEVELS: usize = 4;
 const OUTPUT_CACHE_REFRESH_INTERVAL: Duration = Duration::from_millis(100);
 /// How long a parked session keeps waiting for its provider's wake after the
 /// last detached work settled. Claude re-enters the model a few seconds after
@@ -23,6 +26,8 @@ pub(super) struct BackgroundWorkRegistry {
     last_output_cache_refresh: Option<Instant>,
     output_viewports: HashMap<BackgroundWorkKey, BackgroundOutputViewport>,
     selection: TranscriptSelection,
+    /// Spawn order and nesting depth, recomputed only when items change.
+    spawn_tree: Vec<SpawnNode>,
 }
 
 #[derive(Clone)]
@@ -45,6 +50,8 @@ struct BackgroundSummaryEntry {
     item: BackgroundWorkItem,
     row_focus: FocusHandle,
     stop_focus: FocusHandle,
+    /// Levels below the item that spawned this one; 0 is a root.
+    depth: usize,
 }
 
 #[derive(Clone)]
@@ -109,6 +116,7 @@ impl BackgroundWorkRegistry {
             }
         }
         self.trim_settled();
+        self.rebuild_spawn_tree();
     }
 
     fn upsert(&mut self, mut incoming: BackgroundWorkItem) {
@@ -280,6 +288,8 @@ impl BackgroundWorkRegistry {
         }
     }
 
+    /// Settling drops rows, and this is the one mutation that does not arrive
+    /// through [`Self::apply`], so the tree is rebuilt here too.
     fn settle_foreground(&mut self, status: BackgroundWorkStatus) {
         let keys = self
             .items
@@ -299,6 +309,7 @@ impl BackgroundWorkRegistry {
                 self.remove(&key);
             }
         }
+        self.rebuild_spawn_tree();
     }
 
     fn has_live(&self) -> bool {
@@ -329,6 +340,19 @@ impl BackgroundWorkRegistry {
             .rev()
             .filter_map(|key| self.items.get(key))
             .collect()
+    }
+
+    /// The same items, re-ordered so each one follows whatever spawned it.
+    ///
+    /// Rebuilt on mutation rather than per frame: [`Self::apply`] is the only
+    /// way items change, and a summary row builder runs for every visible row
+    /// on every frame.
+    fn spawn_tree(&self) -> &[SpawnNode] {
+        &self.spawn_tree
+    }
+
+    fn rebuild_spawn_tree(&mut self) {
+        self.spawn_tree = build_spawn_tree(&self.ordered_items());
     }
 
     pub(super) fn selected_text(&self) -> Option<String> {
@@ -364,6 +388,82 @@ impl BackgroundWorkRegistry {
                 .unwrap_or_default()
         })
     }
+}
+
+/// One row of the spawn tree: an item, and how deep under its spawner it sits.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(super) struct SpawnNode {
+    pub key: BackgroundWorkKey,
+    pub depth: usize,
+}
+
+/// Orders work items so each one follows whatever spawned it.
+///
+/// `parent_id` is the edge, and it names another item's `provider_id` — for
+/// Codex, the thread that sent the spawn. Only Codex reports it, so every
+/// other provider yields one flat level, which is the honest shape for them
+/// rather than a tree that looks broken.
+///
+/// Nothing is ever dropped: an item whose parent has already been trimmed, or
+/// one caught in a cycle, surfaces at the root instead of disappearing.
+fn build_spawn_tree(items: &[&BackgroundWorkItem]) -> Vec<SpawnNode> {
+    let index_of = items
+        .iter()
+        .enumerate()
+        .map(|(index, item)| (item.key.provider_id.as_str(), index))
+        .collect::<HashMap<_, _>>();
+    let parents = items
+        .iter()
+        .enumerate()
+        .map(|(index, item)| {
+            item.parent_id
+                .as_deref()
+                .and_then(|parent| index_of.get(parent).copied())
+                .filter(|parent| *parent != index)
+        })
+        .collect::<Vec<_>>();
+
+    let mut children: Vec<Vec<usize>> = vec![Vec::new(); items.len()];
+    let mut roots = Vec::new();
+    for (index, parent) in parents.iter().enumerate() {
+        match parent {
+            Some(parent) => children[*parent].push(index),
+            None => roots.push(index),
+        }
+    }
+
+    let mut nodes = Vec::with_capacity(items.len());
+    let mut emitted = vec![false; items.len()];
+    let mut stack = roots
+        .into_iter()
+        .rev()
+        .map(|root| (root, 0))
+        .collect::<Vec<_>>();
+    while let Some((index, depth)) = stack.pop() {
+        if std::mem::replace(&mut emitted[index], true) {
+            continue;
+        }
+        nodes.push(SpawnNode {
+            key: items[index].key.clone(),
+            depth,
+        });
+        stack.extend(
+            children[index]
+                .iter()
+                .rev()
+                .map(|child| (*child, depth + 1)),
+        );
+    }
+    // Anything left is part of a parent cycle. Show it rather than lose it.
+    for (index, item) in items.iter().enumerate() {
+        if !emitted[index] {
+            nodes.push(SpawnNode {
+                key: item.key.clone(),
+                depth: 0,
+            });
+        }
+    }
+    nodes
 }
 
 fn merge_option<T>(target: &mut Option<T>, incoming: Option<T>) {
@@ -748,13 +848,13 @@ impl Helm {
             .and_then(|session_id| self.background_work.get(&session_id))
             .map(|registry| {
                 registry
-                    .ordered_items()
-                    .into_iter()
-                    .cloned()
-                    .map(|item| {
+                    .spawn_tree()
+                    .iter()
+                    .filter_map(|node| {
+                        let item = registry.items.get(&node.key)?.clone();
                         let kind = item.key.kind as u8;
                         let provider_id = &item.key.provider_id;
-                        BackgroundSummaryEntry {
+                        Some(BackgroundSummaryEntry {
                             row_focus: self.transcript_control_focus(
                                 format!("background-summary-row-{provider_id}-{kind}"),
                                 cx,
@@ -763,8 +863,9 @@ impl Helm {
                                 format!("background-summary-stop-{provider_id}-{kind}"),
                                 cx,
                             ),
+                            depth: node.depth,
                             item,
-                        }
+                        })
                     })
                     .collect::<Vec<_>>()
             })
@@ -1910,6 +2011,10 @@ fn render_background_summary_row(
             .children(stop)
     });
     let is_process = item.key.kind != BackgroundWorkKind::Subagent;
+    // Deep chains would push the title off the row, so the indent stops
+    // growing after a few levels; the nesting rule still marks them as nested.
+    let indent = px(SPAWN_INDENT * entry.depth.min(SPAWN_MAX_INDENT_LEVELS) as f32);
+    let nested = entry.depth > 0;
     let open_key = item.key.clone();
     let key_key = open_key.clone();
     let click_handle = handle.clone();
@@ -1926,12 +2031,14 @@ fn render_background_summary_row(
         .tab_index(0)
         .h(px(32.0))
         .w_full()
-        .px(px(8.0))
+        .pr(px(8.0))
+        .pl(px(8.0) + indent)
         .rounded(px(8.0))
         .flex()
         .items_center()
         .gap(px(9.0))
         .cursor_default()
+        .when(nested, |row| row.border_l_1().border_color(theme.border))
         .focus_visible(|style| style.border_1().border_color(theme.accent))
         .hover(|style| style.bg(theme.overlay_strong))
         .child(icon(
@@ -2156,6 +2263,88 @@ mod tests {
             registry.items[&BackgroundWorkKey::new(BackgroundWorkKind::Process, "background")]
                 .status,
             BackgroundWorkStatus::Running
+        );
+    }
+}
+
+#[cfg(test)]
+mod spawn_tree_tests {
+    use super::*;
+
+    fn agent(id: &str, parent: Option<&str>) -> BackgroundWorkItem {
+        let mut item = BackgroundWorkItem::new(
+            BackgroundWorkKind::Subagent,
+            id,
+            format!("agent {id}"),
+            BackgroundWorkStatus::Running,
+        );
+        item.parent_id = parent.map(str::to_owned);
+        item
+    }
+
+    fn shape(items: &[BackgroundWorkItem]) -> Vec<(String, usize)> {
+        let refs = items.iter().collect::<Vec<_>>();
+        build_spawn_tree(&refs)
+            .into_iter()
+            .map(|node| (node.key.provider_id, node.depth))
+            .collect()
+    }
+
+    #[test]
+    fn providers_without_parent_ids_stay_one_flat_level() {
+        // Only Codex reports parent_id. Everything else must read as a flat
+        // list on purpose, not as a tree that failed to build.
+        let items = vec![agent("a", None), agent("b", None), agent("c", None)];
+        assert_eq!(
+            shape(&items),
+            vec![("a".into(), 0), ("b".into(), 0), ("c".into(), 0)]
+        );
+    }
+
+    #[test]
+    fn children_follow_their_spawner_and_nest_under_it() {
+        let items = vec![
+            agent("root", None),
+            agent("second-root", None),
+            agent("child", Some("root")),
+            agent("grandchild", Some("child")),
+        ];
+        // Depth-first: a child sits directly beneath whatever spawned it,
+        // even though insertion order interleaved the two roots.
+        assert_eq!(
+            shape(&items),
+            vec![
+                ("root".into(), 0),
+                ("child".into(), 1),
+                ("grandchild".into(), 2),
+                ("second-root".into(), 0),
+            ]
+        );
+    }
+
+    #[test]
+    fn an_orphan_surfaces_at_the_root_rather_than_vanishing() {
+        // The parent settled and was trimmed, so the edge dangles.
+        let items = vec![agent("kept", None), agent("orphan", Some("trimmed"))];
+        assert_eq!(
+            shape(&items),
+            vec![("kept".into(), 0), ("orphan".into(), 0)]
+        );
+    }
+
+    #[test]
+    fn a_parent_cycle_terminates_and_still_shows_every_item() {
+        // A malformed payload must not hang the UI thread or drop rows.
+        let items = vec![
+            agent("a", Some("b")),
+            agent("b", Some("a")),
+            agent("self", Some("self")),
+        ];
+        let mut shaped = shape(&items);
+        shaped.sort();
+        assert_eq!(
+            shaped,
+            vec![("a".into(), 0), ("b".into(), 0), ("self".into(), 0)]
         );
     }
 }

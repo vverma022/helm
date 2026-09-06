@@ -441,6 +441,34 @@ impl Helm {
             cx,
             move |this, _, cx| this.set_analytics_enabled(!analytics_enabled, cx),
         );
+        let selected_archive = self.state.archive_after_days;
+        let weak = cx.entity().downgrade();
+        let archive_handle = self.menu_handle("archive-after-selector", cx);
+        let archive_selector = dropdown_menu(
+            MenuChip::new("archive-after-selector")
+                .label(archive_after_label(selected_archive))
+                .outlined()
+                .selected(archive_handle.is_open())
+                .w(px(116.0))
+                .justify_between(),
+            "archive-after-selector-menu",
+            &archive_handle,
+            MenuAlign::BelowRight,
+            move |_| {
+                ARCHIVE_AFTER_DAYS
+                    .into_iter()
+                    .map(|days| {
+                        let weak = weak.clone();
+                        MenuItem::new(archive_after_label(days), move |_, cx| {
+                            let _ = weak.update(cx, |this, cx| {
+                                this.set_archive_after_days(days, cx);
+                            });
+                        })
+                        .selected(days == selected_archive)
+                    })
+                    .collect()
+            },
+        );
         div()
             .child(
                 div()
@@ -500,6 +528,40 @@ impl Helm {
                     )
                     .child(analytics_toggle),
             )
+            .child(
+                div()
+                    .mt(px(15.0))
+                    .w_full()
+                    .min_h(px(60.0))
+                    .px(px(20.0))
+                    .py(px(12.0))
+                    .rounded(px(13.0))
+                    .bg(theme.raised)
+                    .flex()
+                    .items_center()
+                    .gap(px(24.0))
+                    .child(
+                        div()
+                            .flex_1()
+                            .min_w_0()
+                            .child(
+                                div()
+                                    .text_size(sp(13.5))
+                                    .font_weight(FontWeight::MEDIUM)
+                                    .text_color(theme.text)
+                                    .child(tr!("settings.archive_tasks")),
+                            )
+                            .child(
+                                div()
+                                    .mt(px(5.0))
+                                    .text_size(sp(12.5))
+                                    .line_height(sp(18.0))
+                                    .text_color(theme.text_secondary)
+                                    .child(tr!("settings.archive_tasks_description")),
+                            ),
+                    )
+                    .child(archive_selector),
+            )
             .when(updater_available, |column| {
                 let enabled = self.automatic_updates_enabled;
                 let toggle = toggle_switch(
@@ -551,6 +613,14 @@ impl Helm {
     fn set_analytics_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
         self.state.analytics_enabled = enabled;
         self.analytics.set_enabled(enabled);
+        self.save();
+        cx.notify();
+    }
+
+    fn set_archive_after_days(&mut self, days: Option<u32>, cx: &mut Context<Self>) {
+        self.state.archive_after_days = days;
+        // `save` also pushes daemon settings, which is where this lives so the
+        // web and mobile clients hide the same tasks.
         self.save();
         cx.notify();
     }
@@ -2626,6 +2696,18 @@ impl Helm {
         self.save();
         window.refresh();
         cx.notify();
+    }
+}
+
+/// Thresholds offered by the archive dropdown. `None` is "keep everything".
+/// A hand-edited settings file may hold any other value; it still applies and
+/// simply selects nothing here.
+const ARCHIVE_AFTER_DAYS: [Option<u32>; 5] = [None, Some(7), Some(14), Some(30), Some(90)];
+
+fn archive_after_label(days: Option<u32>) -> String {
+    match days {
+        None => tr!("settings.archive_never"),
+        Some(days) => tr!("settings.archive_after_days", count = days),
     }
 }
 

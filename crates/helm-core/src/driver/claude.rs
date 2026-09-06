@@ -991,6 +991,16 @@ fn claude_task_item(
         .get("model")
         .and_then(Value::as_str)
         .map(str::to_owned);
+    // The spawn edge. Claude names the Task tool call that spawned this one,
+    // which `subagent_tasks` already resolves to that parent's task id — the
+    // same id this item is keyed by, so the two link up directly. A depth-1
+    // agent spawned by the main thread has no entry and stays a root.
+    item.parent_id = value
+        .get("parent_tool_use_id")
+        .or_else(|| value.get("parentToolUseId"))
+        .and_then(Value::as_str)
+        .and_then(|parent| state.subagent_tasks.get(parent))
+        .cloned();
     // Subagent prompts ride `task_started`, but detached Bash tasks only link
     // back to the originating tool call by id. Preserve either as the detail
     // surface's Prompt/Command value.
