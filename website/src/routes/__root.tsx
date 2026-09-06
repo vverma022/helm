@@ -13,7 +13,7 @@ import appCss from '@/styles.css?url'
 // origin rather than the repository. Set VITE_SITE_URL in the host's build
 // environment; the fallback keeps previews working before a domain exists.
 const SITE_URL = (
-  import.meta.env.VITE_SITE_URL ?? 'https://helm-app.vercel.app'
+  import.meta.env.VITE_SITE_URL || 'https://helm.vverma.in'
 ).replace(/\/$/, '')
 const REPO_URL = 'https://github.com/vverma022/helm'
 const TITLE = 'Helm — one place to steer all your agents'
