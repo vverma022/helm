@@ -847,6 +847,18 @@ impl Helm {
                 let mut empty = false;
                 let _ = reset_weak.update(cx, |this, cx| {
                     if open {
+                        // Signing in happens in a terminal, outside this app,
+                        // and detection otherwise only runs at launch — so a
+                        // provider that was signed out when Helm started stays
+                        // that way until a restart. Opening the picker is the
+                        // moment the answer matters, and the probe runs
+                        // off-thread, so ask again rather than serving a
+                        // reading from minutes ago.
+                        if ProviderKind::ALL.into_iter().any(|kind| {
+                            provider_signed_out(&this.probes, kind)
+                        }) {
+                            this.refresh_provider_detection(None);
+                        }
                         empty = this.model_picker_has_no_providers();
                         let provider = this
                             .selected_session()
@@ -1110,6 +1122,12 @@ impl Helm {
                             if pending_discoveries.contains(&provider)
                     ) {
                         tr!("models.loading")
+                    } else if matches!(
+                        selected_tab,
+                        ModelPickerTab::Provider(provider)
+                            if provider_signed_out(&probes, provider)
+                    ) {
+                        tr!("models.signed_out")
                     } else {
                         tr!("models.none_reported")
                     };
@@ -3835,7 +3853,7 @@ pub(super) fn picker_rail_shows_provider(
         .iter()
         .any(|probe| probe.provider == kind && probe.installed);
     let switched_off = disabled_providers.contains(&kind) && locked_provider != Some(kind);
-    installed && !switched_off && !provider_signed_out(probes, kind)
+    installed && !switched_off
 }
 
 /// Whether detection asked this provider's CLI and it said it is signed out.
@@ -3908,8 +3926,9 @@ pub(super) fn visible_picker_models(
         // them, but offer nothing to new work — including favorites.
         .filter(|(kind, _)| !disabled_providers.contains(kind) || locked_provider == Some(*kind))
         // A signed-out CLI has no catalog to offer, so its fallback entry
-        // would be a model the agent rejects the moment it is picked.
-        .filter(|(kind, _)| !provider_signed_out(probes, *kind))
+        // would be a model the agent rejects the moment it is picked. The
+        // tab itself stays; the empty state explains the absence.
+        .filter(|(kind, _)| !provider_signed_out(probes, *kind) || locked_provider == Some(*kind))
         .filter(|(kind, model)| {
             if searching {
                 let searchable = format!(

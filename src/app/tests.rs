@@ -1918,7 +1918,7 @@ fn computer_use_navigation_is_macos_debug_only() {
 }
 
 #[test]
-fn signed_out_providers_leave_the_picker() {
+fn signed_out_providers_keep_their_tab_but_offer_no_models() {
     use super::ModelPickerTab;
     use super::composer::{picker_rail_shows_provider, visible_picker_models};
     use crate::model::{ProviderModel, ProviderProbe};
@@ -1939,12 +1939,16 @@ fn signed_out_providers_leave_the_picker() {
         probe(ProviderKind::Codex, None),
     ];
 
+    // The tab stays: removing it left the picker silently short a provider
+    // the user could plainly see was installed, with the only explanation on
+    // a settings page they had no reason to open.
     let shows = |kind| picker_rail_shows_provider(&probes, &[], None, kind);
-    assert!(!shows(ProviderKind::Cursor));
+    assert!(shows(ProviderKind::Cursor));
     assert!(shows(ProviderKind::Claude));
     assert!(shows(ProviderKind::Codex));
 
-    // Its fallback model is gone from its own tab and from search.
+    // Its fallback model is still withheld — the agent would refuse it — so
+    // the tab opens onto the signed-out message instead of a dead entry.
     assert!(
         visible_picker_models(
             &probes,
