@@ -145,16 +145,20 @@ impl Helm {
                     } else {
                         theme.text_secondary
                     })
-                    .when(selected, |element| {
-                        element.bg(theme.sidebar_item_background)
+                    // Same separation as the task list: the selected page
+                    // keeps the accent, hover stays neutral, so the two read
+                    // as different states rather than the same wash.
+                    .when(selected, |element| element.bg(theme.accent.opacity(0.14)))
+                    .when(!selected, |element| {
+                        element
+                            .hover(|element| element.bg(theme.sidebar_item_background))
+                            .active(|element| element.bg(theme.sidebar_item_background))
                     })
-                    .hover(|element| element.bg(theme.sidebar_item_background))
-                    .active(|element| element.bg(theme.sidebar_item_background))
                     .child(icon(
                         icon_path,
                         15.0,
                         if selected {
-                            theme.text_secondary
+                            theme.accent
                         } else {
                             theme.text_tertiary
                         },
@@ -1668,10 +1672,14 @@ impl Helm {
                 .get(&kind)
                 .and_then(|version| version.clone());
             let disabled = self.state.disabled_providers.contains(&kind);
+            // Only a probe that actually asked can say "signed out". `None`
+            // means the CLI offers no way to tell, and must read as ready.
+            let signed_out =
+                installed && probe.is_some_and(|probe| probe.authenticated == Some(false));
 
             let dot_color = if !installed {
                 theme.text_ghost
-            } else if disabled {
+            } else if disabled || signed_out {
                 theme.warning
             } else {
                 theme.success
@@ -1682,7 +1690,9 @@ impl Helm {
                 if let Some(path) = binary_path {
                     parts.push(path);
                 }
-                if disabled {
+                if signed_out {
+                    parts.push(tr!("providers.signed_out"));
+                } else if disabled {
                     parts.push(tr!("providers.disabled_for_new_tasks"));
                 } else if model_count > 0 {
                     parts.push(if model_count == 1 {
@@ -1801,7 +1811,10 @@ impl Helm {
                                 .text_size(sp(12.5))
                                 .text_color(theme.text_tertiary)
                                 .child(detail),
-                        ),
+                        )
+                        .when(signed_out, |element| {
+                            element.child(self.render_provider_sign_in(kind, &theme, cx))
+                        }),
                 )
                 .child(expand_button)
                 .when(installed, |element| element.child(toggle));
@@ -2032,6 +2045,105 @@ impl Helm {
 
     /// Providers switched off here stop offering models to new sessions;
     /// sessions already locked to them keep working.
+    /// What a detected-but-signed-out CLI costs, and the button that fixes it.
+    /// The CLI owns its browser hand-off, so the daemon only launches it and
+    /// the outcome arrives through the next detection sweep. On a remote
+    /// daemon that browser opens on the daemon host, which the caption says
+    /// rather than leaving the user waiting for a window that never appears.
+    fn render_provider_sign_in(
+        &self,
+        kind: ProviderKind,
+        theme: &Theme,
+        cx: &mut Context<Self>,
+    ) -> Div {
+        let remote = self.daemon.is_remote();
+        let pending = self.provider_sign_in_pending.contains(&kind);
+        div()
+            .mt(px(7.0))
+            .p(px(9.0))
+            .rounded(px(7.0))
+            .border_1()
+            .border_color(theme.border)
+            .flex()
+            .flex_col()
+            .gap(px(7.0))
+            .child(
+                div()
+                    .text_size(sp(12.5))
+                    .text_color(theme.text_secondary)
+                    .child(tr!("providers.sign_in_unlocks")),
+            )
+            .child(
+                div()
+                    .id(SharedString::from(format!(
+                        "provider-sign-in-{}",
+                        kind.id()
+                    )))
+                    .tab_index(0)
+                    .focus_visible(|style| style.border_1().border_color(theme.accent))
+                    .h(px(26.0))
+                    .px(px(11.0))
+                    .self_start()
+                    .rounded(px(6.0))
+                    .bg(theme.inverse)
+                    .flex()
+                    .items_center()
+                    .gap(px(6.0))
+                    .cursor_default()
+                    .text_size(sp(12.5))
+                    .font_weight(FontWeight::MEDIUM)
+                    .text_color(theme.on_inverse)
+                    .when(pending, |element| element.opacity(0.6))
+                    .when(!pending, |element| {
+                        element.hover(|element| element.opacity(0.9))
+                    })
+                    .tooltip(Tooltip::text(if remote {
+                        tr!("providers.sign_in_on_daemon_host")
+                    } else {
+                        tr!("providers.sign_in_opens_browser")
+                    }))
+                    .child(if pending {
+                        tr!("providers.sign_in_waiting")
+                    } else {
+                        tr!("providers.sign_in_with", provider = kind.display_name())
+                    })
+                    .on_click(cx.listener(move |this, _, _, cx| {
+                        this.start_provider_sign_in(kind, cx);
+                    }))
+                    .on_key_down(cx.listener(move |this, event: &KeyDownEvent, _, cx| {
+                        if matches!(event.keystroke.key.as_str(), "enter" | "space") {
+                            this.start_provider_sign_in(kind, cx);
+                            cx.stop_propagation();
+                        }
+                    })),
+            )
+    }
+
+    /// Launch the provider's sign-in on the daemon host. The browser
+    /// round-trip can take minutes, so nothing here waits on it: the button
+    /// reads as pending until the next detection sweep reports that provider
+    /// again, which settles the row whether the sign-in succeeded or not.
+    fn start_provider_sign_in(&mut self, kind: ProviderKind, cx: &mut Context<Self>) {
+        if !self.provider_sign_in_pending.insert(kind) {
+            return;
+        }
+        let binary_override = self.state.provider_binary_overrides.get(&kind).cloned();
+        let daemon = self.daemon.client();
+        cx.background_executor()
+            .spawn(async move {
+                let _ = daemon.request(
+                    Uuid::nil(),
+                    Uuid::nil(),
+                    helm_client::Command::ProviderSignIn {
+                        provider: kind,
+                        binary_override,
+                    },
+                );
+            })
+            .detach();
+        cx.notify();
+    }
+
     fn set_provider_enabled(
         &mut self,
         provider: ProviderKind,

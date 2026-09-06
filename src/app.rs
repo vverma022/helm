@@ -1071,6 +1071,7 @@ pub struct Helm {
     settings_focus: FocusHandle,
     onboarding_add_project_focus: FocusHandle,
     onboarding_projectless_focus: FocusHandle,
+    onboarding_providers_focus: FocusHandle,
     /// Mirror of Sparkle's persisted automatic-check setting. Refreshed when
     /// settings opens and on toggle, so frames never read user defaults —
     /// that lookup can reach cfprefsd.
@@ -1114,6 +1115,10 @@ pub struct Helm {
     computer_permission_tx: Sender<Result<ComputerPermissions, String>>,
     computer_permission_events: Receiver<Result<ComputerPermissions, String>>,
     computer_permission_request_pending: bool,
+    /// Providers whose sign-in was launched and whose next detection result
+    /// has not landed yet. Cleared by that result, so a failed sign-in
+    /// settles the row instead of leaving it pending forever.
+    provider_sign_in_pending: HashSet<ProviderKind>,
     /// Account rate-limit meters per provider, fetched off-thread (Claude,
     /// Codex, and OpenCode Go over HTTPS; Grok through a stdio probe) and
     /// refreshed live by Codex's own stream. Frames read only this snapshot.
@@ -2177,6 +2182,7 @@ impl Helm {
             .map(|provider| ProviderProbe {
                 provider,
                 installed: false,
+                authenticated: None,
                 path: None,
                 models: crate::model_catalog::fallback_models(provider),
                 agent_presets: crate::model_catalog::fallback_agent_presets(provider),
@@ -2289,6 +2295,7 @@ impl Helm {
             let settings_focus = cx.focus_handle();
             let onboarding_add_project_focus = cx.focus_handle();
             let onboarding_projectless_focus = cx.focus_handle();
+            let onboarding_providers_focus = cx.focus_handle();
             let updater_button_focus = cx.focus_handle();
             let model_picker_empty_focus = cx.focus_handle();
             let task_switcher_focus = cx.focus_handle();
@@ -2744,6 +2751,8 @@ impl Helm {
                 settings_focus,
                 onboarding_add_project_focus,
                 onboarding_projectless_focus,
+                onboarding_providers_focus,
+                provider_sign_in_pending: HashSet::new(),
                 automatic_updates_enabled: cx
                     .try_global::<crate::updater::UpdaterState>()
                     .and_then(|updater| updater.0.as_ref())

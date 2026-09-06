@@ -13,9 +13,13 @@ const RELEASES_BASE =
   'https://github.com/vverma022/helm/releases/latest/download'
 
 // Versioned artifact names are a stable contract and old archives stay in R2
-// (see RELEASING.md), so a known-published version is a safe fallback while
-// the appcast query is pending or unreachable.
-export const FALLBACK_DOWNLOAD_URL = `${RELEASES_BASE}/Helm-0.0.1.dmg`
+// (see RELEASING.md), so the version this site was built from is a safe
+// fallback while the appcast query is pending or unreachable. It comes from
+// the app's Cargo version at build time (see vite.config.ts) — the same value
+// `scripts/release.ts` publishes under, so it cannot drift behind the
+// artifacts the way a hand-written version does.
+export const APP_VERSION = import.meta.env.VITE_APP_VERSION
+export const FALLBACK_DOWNLOAD_URL = `${RELEASES_BASE}/Helm-${APP_VERSION}.dmg`
 
 export const WINDOWS_ARCHITECTURES = [
   { arch: 'x86_64', label: 'Windows (x86_64)' },

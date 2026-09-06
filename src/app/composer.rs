@@ -946,6 +946,10 @@ impl Helm {
                     provider_color(&theme, provider).opacity(0.9),
                 )
                 .label(selected_model_name)
+                // The model is the composer's primary choice, so it carries
+                // the accent. The provider mark beside it keeps its own brand
+                // color, which is identity rather than emphasis.
+                .accented(true)
         };
 
         popover(
@@ -3831,7 +3835,21 @@ pub(super) fn picker_rail_shows_provider(
         .iter()
         .any(|probe| probe.provider == kind && probe.installed);
     let switched_off = disabled_providers.contains(&kind) && locked_provider != Some(kind);
-    installed && !switched_off
+    installed && !switched_off && !provider_signed_out(probes, kind)
+}
+
+/// Whether detection asked this provider's CLI and it said it is signed out.
+/// Only a probe that actually asked can answer; `None` means the provider
+/// offers no way to tell and must never be treated as signed out.
+///
+/// A signed-out CLI serves an empty catalog, so the picker would be offering
+/// its hardcoded fallback — a model the agent then refuses to be set to. The
+/// tab leaves until the account is back, which is what the Providers page and
+/// the selection error both point at.
+pub(super) fn provider_signed_out(probes: &[ProviderProbe], kind: ProviderKind) -> bool {
+    probes
+        .iter()
+        .any(|probe| probe.provider == kind && probe.authenticated == Some(false))
 }
 
 pub(super) fn model_picker_subtitle(provider: ProviderKind, sub_provider: Option<&str>) -> String {
@@ -3889,6 +3907,9 @@ pub(super) fn visible_picker_models(
         // Switched-off providers keep serving the session already locked to
         // them, but offer nothing to new work — including favorites.
         .filter(|(kind, _)| !disabled_providers.contains(kind) || locked_provider == Some(*kind))
+        // A signed-out CLI has no catalog to offer, so its fallback entry
+        // would be a model the agent rejects the moment it is picked.
+        .filter(|(kind, _)| !provider_signed_out(probes, *kind))
         .filter(|(kind, model)| {
             if searching {
                 let searchable = format!(
@@ -3917,6 +3938,16 @@ pub(super) fn visible_picker_models(
                 .iter()
                 .position(|favorite| favorite.provider == *kind && favorite.model == model.id)
                 .unwrap_or(usize::MAX)
+        });
+    } else {
+        // Starred models lead every other list too. A star says "this is the
+        // one I reach for", and leaving it in catalog order buried it among
+        // models the user had already passed over. The sort is stable, so
+        // everything unstarred keeps the catalog's own ordering.
+        models.sort_by_key(|(kind, model)| {
+            !favorites
+                .iter()
+                .any(|favorite| favorite.provider == *kind && favorite.model == model.id)
         });
     }
     models

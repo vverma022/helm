@@ -406,6 +406,18 @@ providers.enable:
   en: Enable %{provider}
 providers.disable:
   en: Disable %{provider}
+providers.sign_in_with:
+  en: Sign in to %{provider}
+providers.sign_in_waiting:
+  en: Waiting for sign-in…
+providers.sign_in_opens_browser:
+  en: Opens the CLI's sign-in in your browser
+providers.sign_in_on_daemon_host:
+  en: Opens the CLI's sign-in on the daemon host, not this machine
+providers.signed_out:
+  en: Signed out
+providers.sign_in_unlocks:
+  en: Signed out, so only the default model is offered. Sign in to use this account's full model list, resume its chats, and run its skills.
 providers.disabled_for_new_tasks:
   en: Disabled for new tasks
 providers.model_count_one:
@@ -556,6 +568,14 @@ project.without_a_project:
 project.your_project:
   en: your project
 
+onboarding.providers_detected_one:
+  en: "%{count} agent CLI ready"
+onboarding.providers_detected_many:
+  en: "%{count} agent CLIs ready"
+onboarding.no_providers_detected:
+  en: No agent CLIs detected on this machine yet
+onboarding.set_up_providers:
+  en: Manage providers
 onboarding.open_project_to_begin:
   en: Open a project to begin
 onboarding.description:
@@ -1389,6 +1409,8 @@ errors.change_provider_thinking:
   en: "Could not change %{provider}'s thinking level: %{error}"
 errors.open_provider_session:
   en: "Could not open a %{provider} session: %{error}"
+errors.select_model_unsupported:
+  en: "%{provider} did not offer a model to choose. Its CLI is usually signed out — sign in from Settings, then try again."
 errors.select_model:
   en: "Could not select the model: %{error}"
 errors.read_provider_event_stream:
@@ -2070,6 +2092,16 @@ usage.shortcut:
   en: Usage (%{shortcut})
 usage.context_window:
   en: Context window
+usage.plan_quota:
+  en: Plan quota
+usage.quota_remaining:
+  en: "%{percent}% left"
+usage.quota_not_configured:
+  en: Not signed in
+usage.quota_unmetered:
+  en: No metered limit reported
+usage.quota_unavailable:
+  en: Quota unavailable
 usage.plan_limits:
   en: Plan usage limits
 usage.plan_limits_named:

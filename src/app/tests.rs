@@ -1918,6 +1918,94 @@ fn computer_use_navigation_is_macos_debug_only() {
 }
 
 #[test]
+fn signed_out_providers_leave_the_picker() {
+    use super::ModelPickerTab;
+    use super::composer::{picker_rail_shows_provider, visible_picker_models};
+    use crate::model::{ProviderModel, ProviderProbe};
+
+    let probe = |provider: ProviderKind, authenticated: Option<bool>| ProviderProbe {
+        provider,
+        installed: true,
+        authenticated,
+        path: Some(std::path::PathBuf::from(format!("/bin/{}", provider.id()))),
+        // The hardcoded fallback a signed-out CLI would otherwise offer.
+        models: vec![ProviderModel::new("auto", "Auto")],
+        agent_presets: Vec::new(),
+    };
+    let probes = [
+        probe(ProviderKind::Cursor, Some(false)),
+        probe(ProviderKind::Claude, Some(true)),
+        // Most providers cannot be asked, and must keep behaving as before.
+        probe(ProviderKind::Codex, None),
+    ];
+
+    let shows = |kind| picker_rail_shows_provider(&probes, &[], None, kind);
+    assert!(!shows(ProviderKind::Cursor));
+    assert!(shows(ProviderKind::Claude));
+    assert!(shows(ProviderKind::Codex));
+
+    // Its fallback model is gone from its own tab and from search.
+    assert!(
+        visible_picker_models(
+            &probes,
+            &[],
+            &[],
+            None,
+            ModelPickerTab::Provider(ProviderKind::Cursor),
+            "",
+        )
+        .is_empty()
+    );
+    assert!(
+        visible_picker_models(&probes, &[], &[], None, ModelPickerTab::Favorites, "auto")
+            .iter()
+            .all(|(kind, _)| *kind != ProviderKind::Cursor)
+    );
+}
+
+#[test]
+fn starred_models_lead_every_picker_list() {
+    use super::ModelPickerTab;
+    use super::composer::visible_picker_models;
+    use crate::model::{FavoriteModel, ProviderModel, ProviderProbe};
+
+    let probes = [ProviderProbe {
+        provider: ProviderKind::Claude,
+        installed: true,
+        authenticated: None,
+        path: Some(std::path::PathBuf::from("/bin/claude")),
+        models: vec![
+            ProviderModel::new("claude-haiku-4-5", "Haiku"),
+            ProviderModel::new("claude-opus-5", "Opus"),
+            ProviderModel::new("claude-sonnet-5", "Sonnet"),
+        ],
+        agent_presets: Vec::new(),
+    }];
+    let favorites = [FavoriteModel {
+        provider: ProviderKind::Claude,
+        model: "claude-sonnet-5".into(),
+    }];
+
+    let ids = |tab, query: &str| {
+        visible_picker_models(&probes, &favorites, &[], None, tab, query)
+            .into_iter()
+            .map(|(_, model)| model.id)
+            .collect::<Vec<_>>()
+    };
+
+    // The starred model leads its provider tab, and the rest keep catalog order.
+    assert_eq!(
+        ids(ModelPickerTab::Provider(ProviderKind::Claude), ""),
+        vec!["claude-sonnet-5", "claude-haiku-4-5", "claude-opus-5"]
+    );
+    // And it leads a search that matches several models.
+    assert_eq!(
+        ids(ModelPickerTab::Provider(ProviderKind::Claude), "claude"),
+        vec!["claude-sonnet-5", "claude-haiku-4-5", "claude-opus-5"]
+    );
+}
+
+#[test]
 fn switched_off_providers_leave_the_picker_except_for_their_locked_session() {
     use super::ModelPickerTab;
     use super::composer::visible_picker_models;
@@ -1926,6 +2014,7 @@ fn switched_off_providers_leave_the_picker_except_for_their_locked_session() {
     let probe = |provider: ProviderKind, model: &str| ProviderProbe {
         provider,
         installed: true,
+        authenticated: None,
         path: Some(std::path::PathBuf::from(format!("/bin/{}", provider.id()))),
         models: vec![ProviderModel::new(model, model)],
         agent_presets: Vec::new(),
@@ -2015,6 +2104,7 @@ fn tab_cycle_walks_favorites_then_usable_providers_in_rail_order() {
     let probe = |provider: ProviderKind, installed: bool| ProviderProbe {
         provider,
         installed,
+        authenticated: None,
         path: installed.then(|| std::path::PathBuf::from(format!("/bin/{}", provider.id()))),
         models: vec![ProviderModel::new("model", "model")],
         agent_presets: Vec::new(),
@@ -2063,6 +2153,7 @@ fn the_picker_is_empty_only_once_detection_has_answered() {
     let probe = |provider: ProviderKind, installed: bool| ProviderProbe {
         provider,
         installed,
+        authenticated: None,
         path: installed.then(|| std::path::PathBuf::from(format!("/bin/{}", provider.id()))),
         models: vec![ProviderModel::new("model", "model")],
         agent_presets: Vec::new(),
@@ -2110,6 +2201,7 @@ fn the_rail_draws_only_installed_providers_the_settings_left_on() {
     let probe = |provider: ProviderKind, installed: bool| ProviderProbe {
         provider,
         installed,
+        authenticated: None,
         path: installed.then(|| std::path::PathBuf::from(format!("/bin/{}", provider.id()))),
         models: vec![ProviderModel::new("model", "model")],
         agent_presets: Vec::new(),

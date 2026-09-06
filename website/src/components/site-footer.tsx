@@ -32,6 +32,7 @@ export function SiteFooter({
       title: 'Project',
       links: [
         { label: 'Source', href: repoUrl, external: true },
+        { label: 'Changelog', href: '/changelog' },
         { label: 'Releases', href: repoUrl + '/releases', external: true },
         { label: 'Issues', href: repoUrl + '/issues', external: true },
       ],

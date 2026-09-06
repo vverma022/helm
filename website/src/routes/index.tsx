@@ -221,9 +221,10 @@ function Home() {
               className="rise mx-auto mt-6 max-w-xl text-[17px] leading-relaxed text-pretty text-muted-foreground md:text-lg"
               style={{ animationDelay: '140ms' }}
             >
-              Helm drives the agent CLIs already on your machine — sessions,
-              transcripts, tool activity and checkpoints in one fast native
-              window, with nothing sent anywhere.
+              You're at the wheel of multiple agent sessions. Helm drives the
+              agent CLIs already on your machine — sessions, transcripts, tool
+              activity and checkpoints in one fast native window, with nothing
+              sent anywhere.
             </p>
 
             <div

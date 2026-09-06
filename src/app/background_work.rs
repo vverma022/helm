@@ -943,13 +943,15 @@ impl Helm {
     }
 
     /// The app the primary "open in" button targets: the persisted choice
-    /// while it is still installed, otherwise the file manager.
+    /// while it is still installed, otherwise the first installed entry in
+    /// the catalog. The catalog leads with editors, so an untouched button
+    /// opens the workspace where the work happens rather than in the file
+    /// manager — which is what a coding tool is for.
     fn preferred_open_in_app(&self) -> Option<&crate::platform::ExternalApp> {
         self.state
             .open_in_app
             .as_deref()
             .and_then(|id| self.open_in_apps.iter().find(|app| app.id == id))
-            .or_else(|| self.open_in_apps.iter().find(|app| app.id == "finder"))
             .or_else(|| self.open_in_apps.first())
     }
 

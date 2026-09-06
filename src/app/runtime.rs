@@ -1467,6 +1467,7 @@ impl Helm {
                         _ => ProviderProbe {
                             provider,
                             installed: false,
+                            authenticated: None,
                             path: None,
                             models: crate::model_catalog::fallback_models(provider),
                             agent_presets: crate::model_catalog::fallback_agent_presets(provider),
@@ -1510,6 +1511,7 @@ impl Helm {
                     // Keep that newer catalog while still accepting PATH
                     // detection from this response.
                     existing.installed = probe.installed;
+                    existing.authenticated = probe.authenticated;
                     existing.path = probe.path;
                 } else {
                     *existing = probe;
@@ -1517,6 +1519,9 @@ impl Helm {
             } else {
                 self.probes.push(probe);
             }
+            // Whatever this sweep says is the truth a launched sign-in was
+            // waiting for, success or not.
+            self.provider_sign_in_pending.remove(&provider);
             if installed {
                 installed_providers.push(provider);
             } else {
@@ -1529,8 +1534,27 @@ impl Helm {
         }
         if changed {
             self.request_provider_version_probes();
+            self.reconcile_last_provider();
         }
         changed
+    }
+
+    fn reconcile_last_provider(&mut self) {
+        if self.provider_detection_remaining > 0 || self.provider_enabled(self.state.last_provider)
+        {
+            return;
+        }
+        let Some(replacement) = ProviderKind::ALL
+            .into_iter()
+            .find(|provider| self.provider_enabled(*provider))
+        else {
+            return;
+        };
+        self.state.last_provider = replacement;
+        self.state.last_model = None;
+        self.state.last_reasoning_effort = None;
+        self.state.last_service_tier = None;
+        self.state.last_context_window = None;
     }
 
     /// Whether the provider can back a new session: installed and not switched

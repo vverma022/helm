@@ -207,6 +207,12 @@ providers.show_settings: "%{provider} の設定を表示"
 providers.hide_settings: "%{provider} の設定を隠す"
 providers.enable: "%{provider} を有効にする"
 providers.disable: "%{provider} を無効にする"
+providers.sign_in_with: "%{provider} にサインイン"
+providers.sign_in_waiting: サインインを待っています…
+providers.sign_in_opens_browser: CLI のサインインをブラウザで開きます
+providers.sign_in_on_daemon_host: このマシンではなくデーモンホストで CLI のサインインを開きます
+providers.signed_out: サインアウト中
+providers.sign_in_unlocks: サインアウト中のため既定のモデルのみ利用できます。サインインすると、このアカウントの全モデル、チャットの再開、スキルの実行が使えます。
 providers.disabled_for_new_tasks: 新規タスクでは無効
 providers.model_count_one: "%{count} 個のモデル"
 providers.model_count_many: "%{count} 個のモデル"
@@ -285,6 +291,10 @@ project.project_lower: プロジェクト
 project.without_a_project: プロジェクトなし
 project.your_project: あなたのプロジェクト
 
+onboarding.providers_detected_one: エージェント CLI %{count} 件を検出
+onboarding.providers_detected_many: エージェント CLI %{count} 件を検出
+onboarding.no_providers_detected: このコンピュータでエージェント CLI が見つかりません
+onboarding.set_up_providers: プロバイダーを管理
 onboarding.open_project_to_begin: プロジェクトを開いて始めましょう
 onboarding.description: Helm は選択したフォルダでコーディングエージェントを実行します。コード、タスク、履歴はこのコンピュータに保存されます
 onboarding.web_description: デーモンホスト上のパスを選ぶか、プロジェクトなしで開始してください。
@@ -713,6 +723,7 @@ errors.stop_provider: "%{provider} を停止できませんでした：%{error}"
 errors.switch_provider_model: "%{provider} のモデルを切り替えられませんでした：%{error}"
 errors.change_provider_thinking: "%{provider} の思考レベルを変更できませんでした：%{error}"
 errors.open_provider_session: "%{provider} のセッションを開けませんでした：%{error}"
+errors.select_model_unsupported: "%{provider} は選択できるモデルを提示しませんでした。通常は CLI がサインアウトしています。設定からサインインして再試行してください。"
 errors.select_model: "モデルを選択できませんでした：%{error}"
 errors.read_provider_event_stream: "%{provider} のイベントストリームを読み取れませんでした：%{error}"
 errors.answer_provider_permission: "%{provider} の権限リクエストに回答できませんでした：%{error}"
@@ -1059,6 +1070,11 @@ usage.refresh_failed: "使用状況の更新に失敗しました：%{error}"
 usage.context_used: コンテキストウインドウを %{percent}% 使用（%{shortcut}）
 usage.shortcut: 使用状況（%{shortcut}）
 usage.context_window: コンテキストウインドウ
+usage.plan_quota: プランの残量
+usage.quota_remaining: 残り %{percent}%
+usage.quota_not_configured: 未サインイン
+usage.quota_unmetered: 計測対象の上限は報告されていません
+usage.quota_unavailable: 残量を取得できません
 usage.plan_limits: プランの使用量上限
 usage.plan_limits_named: プランの使用量上限 · %{plan}
 usage.open_account_settings: アカウントの使用状況設定を開く

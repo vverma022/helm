@@ -992,6 +992,14 @@ fn fx_model_provider_switch<'a>(
     .then_some((provider, "gateway"))
 }
 
+/// Whether a request failed because the agent does not implement the method.
+/// JSON-RPC reserves -32601 for it; the text form is matched too because the
+/// error arrives already rendered from several transports.
+fn method_not_found(error: &impl std::fmt::Display) -> bool {
+    let rendered = error.to_string();
+    rendered.contains("-32601") || rendered.to_ascii_lowercase().contains("method not found")
+}
+
 fn set_model_params(
     session_id: &SessionId,
     model: &str,
@@ -1132,10 +1140,20 @@ async fn apply_model(
         }
     };
     if let Err(error) = connection.send_request(request).block_task().await {
-        let _ = events.send(DriverEvent::Error(tr!(
-            "errors.select_model",
-            error = error
-        )));
+        // An agent that advertises no model option and rejects the legacy
+        // request has no way to be told which model to use. Reporting the raw
+        // JSON-RPC "Method not found" blames the protocol for what is almost
+        // always a signed-out CLI serving an empty catalog, so name the real
+        // remedy instead.
+        let message = if method_not_found(&error) {
+            tr!(
+                "errors.select_model_unsupported",
+                provider = provider.display_name()
+            )
+        } else {
+            tr!("errors.select_model", error = error)
+        };
+        let _ = events.send(DriverEvent::Error(message));
         return;
     }
     if provider != ProviderKind::Grok
@@ -2422,6 +2440,15 @@ mod tests {
         );
         let bare = launch_for(ProviderKind::Grok, None).unwrap();
         assert_eq!(bare.args, ["agent", "stdio"]);
+    }
+
+    #[test]
+    fn unimplemented_model_requests_are_named_as_such() {
+        // Both shapes the transports hand back for an unknown method.
+        assert!(method_not_found(&"Method not found: session/set_model"));
+        assert!(method_not_found(&"rpc error -32601"));
+        // A real failure must keep reporting itself, not be relabelled.
+        assert!(!method_not_found(&"connection reset by peer"));
     }
 
     #[test]
