@@ -3,4 +3,11 @@ import type { ProviderAgentPreset } from "./ProviderAgentPreset";
 import type { ProviderKind } from "./ProviderKind";
 import type { ProviderModel } from "./ProviderModel";
 
-export type ProviderProbe = { provider: ProviderKind, installed: boolean, path: string | null, models: Array<ProviderModel>, agent_presets: Array<ProviderAgentPreset>, };
+export type ProviderProbe = { provider: ProviderKind, installed: boolean, path: string | null,
+/**
+ * Whether the installed CLI is signed in. `None` means the provider
+ * offers no way to ask, which is most of them — an unknown must never
+ * render as "signed out", since that would accuse a working CLI of
+ * being broken.
+ */
+authenticated: boolean | null, models: Array<ProviderModel>, agent_presets: Array<ProviderAgentPreset>, };

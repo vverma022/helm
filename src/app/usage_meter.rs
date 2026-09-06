@@ -265,7 +265,7 @@ impl Helm {
             .hover(|element| element.bg(theme.overlay))
             .when(handle.is_open(), |element| element.bg(theme.overlay_strong))
             .tooltip(Tooltip::text(tooltip))
-            .child(context_gauge(percent, theme.border_strong, fill));
+            .child(context_gauge(percent, theme.accent.opacity(0.3), fill));
 
         Some(popover(
             trigger,
@@ -583,7 +583,7 @@ fn plan_skeleton(theme: &Theme) -> AnyElement {
 
 /// A quota bar: full-width track, fill proportional to `percent`. A lane in
 /// use keeps a visible sliver even under one percent.
-fn meter_bar(theme: &Theme, percent: f64) -> Div {
+pub(super) fn meter_bar(theme: &Theme, percent: f64) -> Div {
     let fraction = (percent / 100.0).clamp(0.0, 1.0) as f32;
     let fraction = if fraction > 0.0 {
         fraction.max(0.015)

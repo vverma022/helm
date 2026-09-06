@@ -179,9 +179,13 @@ if (explicitBuildNumber && !/^\d+(?:\.\d+){0,2}$/.test(explicitBuildNumber)) {
 if (!Number.isSafeInteger(historyCount) || historyCount < 0) {
   throw new Error("HELM_HISTORY_COUNT must be a non-negative integer.");
 }
+// src/analytics.rs reads both through option_env!, so an unset pair simply
+// leaves the collector inert rather than breaking the build. Helm ships with
+// no telemetry by default, so this is a note, not a gate.
 if (!values["skip-build"] && (!analyticsEndpoint || !analyticsWebsiteId)) {
-  throw new Error(
-    "Set HELM_ANALYTICS_ENDPOINT and HELM_ANALYTICS_WEBSITE_ID before building a release.",
+  console.warn(
+    "  ! HELM_ANALYTICS_ENDPOINT / HELM_ANALYTICS_WEBSITE_ID are unset — " +
+      "building without analytics.",
   );
 }
 

@@ -247,6 +247,7 @@ pub struct MenuChip {
     outlined: bool,
     selected: bool,
     disabled: bool,
+    accented: bool,
     height: Option<Pixels>,
     background: Option<Hsla>,
 }
@@ -261,9 +262,18 @@ impl MenuChip {
             outlined: false,
             selected: false,
             disabled: false,
+            accented: false,
             height: None,
             background: None,
         }
+    }
+
+    /// Tint the label and caret with the theme accent. Opt-in, for the one or
+    /// two chips that are the primary control of their row — every chip
+    /// wearing it would make the accent mean nothing.
+    pub fn accented(mut self, accented: bool) -> Self {
+        self.accented = accented;
+        self
     }
 
     /// Override the chip's fixed height, for rows whose controls share a
@@ -353,8 +363,13 @@ impl RenderOnce for MenuChip {
                     .border_color(theme.border_strong)
                     .bg(self.background.unwrap_or(theme.raised))
             })
-            .when(self.selected, |element| element.bg(theme.overlay))
-            .when(!self.disabled, |element| {
+            // An open chip is the one the panel belongs to, so it takes the
+            // accent rather than the same neutral wash hover uses — the two
+            // states were otherwise identical.
+            .when(self.selected, |element| {
+                element.bg(theme.accent.opacity(0.16))
+            })
+            .when(!self.disabled && !self.selected, |element| {
                 element.hover(|element| element.bg(theme.overlay))
             })
             .when(self.disabled, |element| element.opacity(0.7))
@@ -365,11 +380,23 @@ impl RenderOnce for MenuChip {
                 div()
                     .min_w_0()
                     .truncate()
-                    .text_color(theme.text_secondary)
+                    .text_color(match (self.selected, self.accented) {
+                        (true, _) => theme.text,
+                        (false, true) => theme.accent,
+                        (false, false) => theme.text_secondary,
+                    })
                     .child(self.label),
             )
             .when(self.caret, |element| {
-                element.child(icon("icons/chevron-down.svg", 10.5, theme.text_ghost))
+                element.child(icon(
+                    "icons/chevron-down.svg",
+                    10.5,
+                    if self.accented {
+                        theme.accent
+                    } else {
+                        theme.text_ghost
+                    },
+                ))
             })
     }
 }

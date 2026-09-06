@@ -157,7 +157,10 @@ fn append_sidebar_group_rows(
     collapsed: bool,
     show_more: bool,
 ) {
-    if sessions.is_empty() && !show_more {
+    // An empty project section still renders: its header is how an opened
+    // project stays visible, and how its compose button stays reachable,
+    // before any task has started in it.
+    if sessions.is_empty() && !show_more && !matches!(group, SidebarGroup::Project(_)) {
         return;
     }
 
@@ -262,6 +265,7 @@ fn sort_sidebar_sessions(sessions: &mut Vec<&AgentSession>, ordering: SidebarOrd
 
 fn project_sidebar_groups(
     sessions: &[&AgentSession],
+    project_ids: &[Uuid],
     projectless_project_ids: &HashSet<Uuid>,
 ) -> Vec<(SidebarGroup, Vec<Uuid>)> {
     let mut groups: Vec<(SidebarGroup, Vec<Uuid>)> = Vec::new();
@@ -278,6 +282,12 @@ fn project_sidebar_groups(
             index
         });
         groups[index].1.push(session.id);
+    }
+    for project_id in project_ids {
+        if projectless_project_ids.contains(project_id) || indexes.contains_key(project_id) {
+            continue;
+        }
+        groups.push((SidebarGroup::Project(*project_id), Vec::new()));
     }
     if !projectless_sessions.is_empty() {
         groups.push((SidebarGroup::Projectless, projectless_sessions));
@@ -1277,8 +1287,14 @@ impl Helm {
                     })
                     .map(|project| project.id)
                     .collect::<HashSet<_>>();
+                let project_ids = self
+                    .state
+                    .projects
+                    .iter()
+                    .map(|project| project.id)
+                    .collect::<Vec<_>>();
                 for (group, sessions) in
-                    project_sidebar_groups(&sorted_sessions, &projectless_project_ids)
+                    project_sidebar_groups(&sorted_sessions, &project_ids, &projectless_project_ids)
                 {
                     let revealed_older_sessions = self
                         .sidebar_project_reveal_counts
@@ -1431,6 +1447,10 @@ impl Helm {
                 .invisible()
                 .group_hover(group_name.clone(), |icon| icon.visible())
         });
+        // An expanded section with nothing under it is an empty project, where
+        // the compose button is the only thing to do. Hover-to-reveal would
+        // leave that row looking like a dead end, so it stays visible.
+        let section_is_empty = !collapsed && !has_expanded_children;
         let compose = show_folder_icon.then(|| {
             let compose_focus = self
                 .sidebar_group_compose_focuses
@@ -1453,7 +1473,6 @@ impl Helm {
                         .track_focus(&compose_focus)
                         .tab_index(0)
                         .tab_stop(true)
-                        .w_0()
                         .h(px(22.0))
                         .overflow_hidden()
                         .rounded(px(4.0))
@@ -1461,7 +1480,13 @@ impl Helm {
                         .items_center()
                         .justify_center()
                         .cursor_default()
-                        .opacity(0.0)
+                        .map(|style| {
+                            if section_is_empty {
+                                style.w(px(20.0))
+                            } else {
+                                style.w_0().opacity(0.0)
+                            }
+                        })
                         .group_hover(group_name.clone(), |style| style.w(px(20.0)).opacity(1.0))
                         .focus_visible(|style| {
                             style
@@ -1906,11 +1931,28 @@ impl Helm {
             .py(px(7.0))
             .rounded(px(7.0))
             .cursor_default()
+            .relative()
+            // Selection used to paint the same wash as hover, so the selected
+            // task became invisible the moment the pointer rested on another
+            // row. The accent tint separates the two states, and the rail
+            // repeats it as shape so the distinction does not rest on color.
             .when(selected, |element| {
-                element.bg(theme.sidebar_item_background)
+                element.bg(theme.accent.opacity(0.14)).child(
+                    div()
+                        .absolute()
+                        .left(px(-2.0))
+                        .top(px(8.0))
+                        .bottom(px(8.0))
+                        .w(px(2.0))
+                        .rounded_full()
+                        .bg(theme.accent),
+                )
             })
-            .hover(|element| element.bg(theme.sidebar_item_background))
-            .active(|element| element.bg(theme.sidebar_item_background))
+            .when(!selected, |element| {
+                element
+                    .hover(|element| element.bg(theme.sidebar_item_background))
+                    .active(|element| element.bg(theme.sidebar_item_background))
+            })
             .child(
                 div()
                     .flex()
@@ -2207,6 +2249,101 @@ impl Helm {
 
     // ── Empty states ───────────────────────────────────────────────────────
 
+    /// The first-run provider step: what detection actually found on this
+    /// machine, so the welcome screen never implies an agent CLI the user
+    /// does not have. Detection results are already on the entity, so this
+    /// reads memory only — the probe itself runs off-thread at launch.
+    /// Configuration proper stays on the Providers settings page rather than
+    /// being half-reimplemented here.
+    fn render_onboarding_providers(&self, theme: &Theme, cx: &mut Context<Self>) -> Div {
+        let detected = ProviderKind::ALL
+            .into_iter()
+            .filter(|provider| self.provider_enabled(*provider))
+            .collect::<Vec<_>>();
+
+        let mut list = div()
+            .flex()
+            .flex_wrap()
+            .justify_center()
+            .gap_x(px(14.0))
+            .gap_y(px(6.0))
+            .max_w(px(420.0));
+        for provider in &detected {
+            let version = self
+                .provider_versions
+                .get(provider)
+                .and_then(|version| version.clone());
+            list = list.child(
+                div()
+                    .flex()
+                    .items_center()
+                    .gap(px(6.0))
+                    // Never color alone: the dot is paired with the name and,
+                    // when probed, the version it reported.
+                    .child(div().size(px(6.0)).rounded_full().bg(theme.success))
+                    .child(
+                        div()
+                            .text_size(sp(12.5))
+                            .text_color(theme.text_secondary)
+                            .child(provider.display_name()),
+                    )
+                    .children(version.map(|version| {
+                        div()
+                            .text_size(sp(12.5))
+                            .text_color(theme.text_tertiary)
+                            .child(SharedString::from(version))
+                    })),
+            );
+        }
+
+        div()
+            .mt(px(18.0))
+            .flex()
+            .flex_col()
+            .items_center()
+            .gap(px(8.0))
+            .child(
+                div()
+                    .text_size(sp(12.5))
+                    .text_color(theme.text_tertiary)
+                    .child(match detected.len() {
+                        0 => tr!("onboarding.no_providers_detected"),
+                        1 => tr!("onboarding.providers_detected_one", count = 1),
+                        count => tr!("onboarding.providers_detected_many", count = count),
+                    }),
+            )
+            .when(!detected.is_empty(), |element| element.child(list))
+            .child(
+                div()
+                    .id("onboarding-providers")
+                    .track_focus(&self.onboarding_providers_focus)
+                    .tab_index(2)
+                    .focus_visible(|style| style.border_1().border_color(theme.accent))
+                    .h(px(26.0))
+                    .px(px(10.0))
+                    .rounded_full()
+                    .flex()
+                    .items_center()
+                    .gap(px(6.0))
+                    .cursor_default()
+                    .text_size(sp(12.5))
+                    .text_color(theme.text_secondary)
+                    .hover(|element| element.bg(theme.overlay))
+                    .active(|element| element.bg(theme.overlay_strong))
+                    .child(icon("icons/settings.svg", 11.0, theme.text_tertiary))
+                    .child(tr!("onboarding.set_up_providers"))
+                    .on_click(cx.listener(|this, _, _, cx| {
+                        this.open_settings_page(SettingsPage::Providers, cx);
+                    }))
+                    .on_key_down(cx.listener(|this, event: &KeyDownEvent, _, cx| {
+                        if matches!(event.keystroke.key.as_str(), "enter" | "space") {
+                            this.open_settings_page(SettingsPage::Providers, cx);
+                            cx.stop_propagation();
+                        }
+                    })),
+            )
+    }
+
     pub(super) fn render_empty_state(&self, cx: &mut Context<Self>) -> Div {
         let theme = Theme::current(cx);
         if self.selected_project().is_none() {
@@ -2237,6 +2374,7 @@ impl Helm {
                         .text_color(theme.text_tertiary)
                         .child(tr_cow!("onboarding.description")),
                 )
+                .child(self.render_onboarding_providers(&theme, cx))
                 .child(
                     div()
                         .mt(px(20.0))
@@ -2582,7 +2720,8 @@ mod tests {
         let second = AgentSession::new(second_project, ProviderKind::Codex);
         let third = AgentSession::new(first_project, ProviderKind::Codex);
 
-        let groups = project_sidebar_groups(&[&second, &first, &third], &HashSet::new());
+        let groups =
+            project_sidebar_groups(&[&second, &first, &third], &[], &HashSet::new());
 
         assert_eq!(
             groups,
@@ -2592,6 +2731,44 @@ mod tests {
                     SidebarGroup::Project(first_project),
                     vec![first.id, third.id]
                 ),
+            ]
+        );
+    }
+
+    #[test]
+    fn projects_without_started_sessions_keep_a_trailing_section() {
+        let busy_project = Uuid::from_u128(1);
+        let empty_project = Uuid::from_u128(2);
+        let session = AgentSession::new(busy_project, ProviderKind::Codex);
+
+        let groups = project_sidebar_groups(
+            &[&session],
+            &[empty_project, busy_project],
+            &HashSet::new(),
+        );
+
+        assert_eq!(
+            groups,
+            vec![
+                (SidebarGroup::Project(busy_project), vec![session.id]),
+                (SidebarGroup::Project(empty_project), Vec::new()),
+            ]
+        );
+    }
+
+    #[test]
+    fn an_empty_project_section_still_renders_its_header() {
+        let mut rows = vec![SidebarRow::Search];
+        let empty = SidebarGroup::Project(Uuid::from_u128(1));
+        append_sidebar_group_rows(&mut rows, empty, &[], false, false);
+        append_sidebar_group_rows(&mut rows, SidebarGroup::Projectless, &[], false, false);
+
+        assert_eq!(
+            rows,
+            vec![
+                SidebarRow::Search,
+                SidebarRow::Header(empty),
+                SidebarRow::GroupSpacer
             ]
         );
     }
@@ -2607,6 +2784,7 @@ mod tests {
 
         let groups = project_sidebar_groups(
             &[&first_projectless, &ordinary, &second_projectless],
+            &[],
             &HashSet::from([first_projectless_project, second_projectless_project]),
         );
 

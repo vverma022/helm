@@ -529,6 +529,12 @@ pub struct ProviderProbe {
     pub provider: ProviderKind,
     pub installed: bool,
     pub path: Option<PathBuf>,
+    /// Whether the installed CLI is signed in. `None` means the provider
+    /// offers no way to ask, which is most of them — an unknown must never
+    /// render as "signed out", since that would accuse a working CLI of
+    /// being broken.
+    #[serde(default)]
+    pub authenticated: Option<bool>,
     #[serde(default)]
     pub models: Vec<ProviderModel>,
     #[serde(default)]

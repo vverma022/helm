@@ -1,0 +1,142 @@
+name: Release on merge
+
+# Merging with "(RELEASE)" in the commit subject bumps the version, closes the
+# changelog's unreleased section against it, and starts the build.
+#
+#   (RELEASE)        0.1.17 -> 0.1.18   patch, the default
+#   (RELEASE minor)  0.1.17 -> 0.2.0
+#   (RELEASE major)  0.1.17 -> 1.0.0
+#
+# Cargo.toml is the single source of truth for the version — scripts/release.ts
+# and release.yml both read it, and the website derives its download fallback
+# from it — so bumping it here is what makes every other surface agree.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: release-on-merge
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Bump and release
+    if: contains(github.event.head_commit.message, '(RELEASE)')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # The bump is committed back, so the checkout needs push rights and
+          # real history rather than a detached shallow one.
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Work out the next version
+        id: version
+        env:
+          SUBJECT: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+          current=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          if [ -z "$current" ]; then
+            echo "::error::No version found in Cargo.toml"
+            exit 1
+          fi
+
+          # Only the first line matters; a body mentioning the word must not
+          # silently turn a patch release into a major one.
+          subject=$(printf '%s' "$SUBJECT" | head -1)
+          case "$subject" in
+            *"(RELEASE major)"*) level=major ;;
+            *"(RELEASE minor)"*) level=minor ;;
+            *) level=patch ;;
+          esac
+
+          IFS=. read -r major minor patch <<EOF
+          $current
+          EOF
+          case "$level" in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            patch) patch=$((patch + 1)) ;;
+          esac
+          next="${major}.${minor}.${patch}"
+
+          echo "current=$current" >> "$GITHUB_OUTPUT"
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+          echo "Releasing $current -> $next ($level)"
+
+      # Sparkle shows the CHANGELOG section for the version being released, so
+      # an empty one ships a blank update prompt to everyone. Failing here
+      # costs a re-push; failing silently costs a release.
+      - name: Check there is something to release
+        env:
+          NEXT: ${{ steps.version.outputs.next }}
+        run: |
+          set -euo pipefail
+          if ! grep -qF '## [unreleased]' CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no '## [unreleased]' section to release."
+            exit 1
+          fi
+          notes=$(awk '
+            /^## \[unreleased\]/ { collecting = 1; next }
+            collecting && /^## / { exit }
+            collecting && /^[-*] / { print }
+          ' CHANGELOG.md)
+          if [ -z "$notes" ]; then
+            echo "::error::'## [unreleased]' has no entries. Nothing to tell users about $NEXT."
+            exit 1
+          fi
+          echo "Release notes for $NEXT:"
+          echo "$notes"
+
+      - name: Bump the version and close the changelog
+        env:
+          CURRENT: ${{ steps.version.outputs.current }}
+          NEXT: ${{ steps.version.outputs.next }}
+        run: |
+          set -euo pipefail
+
+          # Only the first `version =`, which is the root package's. The
+          # workspace crates carry their own and must not move.
+          perl -0pi -e 's/^version = "\Q$ENV{CURRENT}\E"/version = "$ENV{NEXT}"/m' Cargo.toml
+
+          # Cargo.lock pins the root package too. Target the version line that
+          # follows `name = "helm"` so no similarly named crate is caught.
+          perl -0pi -e 's/(\nname = "helm"\nversion = ")\Q$ENV{CURRENT}\E(")/$1$ENV{NEXT}$2/' Cargo.lock
+
+          # Close the unreleased section against this version and open a fresh
+          # one, so the next change has somewhere to land.
+          perl -0pi -e 's/^## \[unreleased\]\n/## [unreleased]\n\n## [$ENV{NEXT}]\n/m' CHANGELOG.md
+
+          echo "--- Cargo.toml ---"; sed -n '1,4p' Cargo.toml
+          echo "--- CHANGELOG.md ---"; sed -n '/^## \[unreleased\]/,/^## \[/p' CHANGELOG.md | head -12
+
+      - name: Commit the bump
+        env:
+          NEXT: ${{ steps.version.outputs.next }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Cargo.toml Cargo.lock CHANGELOG.md
+          # The subject deliberately omits "(RELEASE)" so this push cannot
+          # re-enter this workflow. (A GITHUB_TOKEN push does not trigger
+          # workflows either, but the naming should not depend on that.)
+          git commit -m "Release ${NEXT}"
+          git push origin HEAD:main
+
+      - name: Start the release build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEXT: ${{ steps.version.outputs.next }}
+        run: |
+          set -euo pipefail
+          gh workflow run release.yml --ref main
+          echo "Dispatched release.yml for ${NEXT}."

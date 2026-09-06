@@ -16,6 +16,21 @@ the original feature bullet instead of adding separate entries for them.
 
 ## [unreleased]
 
+- Group the sidebar by project by default, and keep a section for every project you open so a new one is visible, with its own compose button, before it has any history
+- Start new tasks on a provider that is actually installed instead of always defaulting to Codex, and move off a provider whose CLI is removed or switched off
+- Show what the first run found: the welcome screen lists the agent CLIs detected on this machine and links to provider setup
+- See how much of every provider's plan is left, with reset times, on the Usage page instead of one provider at a time in the footer
+- Leave providers with no usage out of the usage chart legend and the daily table
+- Open a workspace in your editor by default rather than the file manager
+- Tell builds apart at a glance: released builds carry a red helm icon, development builds keep the white one
+- Say when a detected agent CLI is signed out instead of offering it as ready, with a button that starts its sign-in
+- Give the selected task and settings page the accent colour, so selection no longer looks identical to whatever the pointer is resting on
+- Leave models that processed nothing out of the usage breakdown
+- Read the changelog on the website
+- Hide a signed-out provider's models from the picker instead of offering one the agent then refuses, and say what to do when a provider has no model to choose
+- Put starred models at the top of every model list, not only the favorites tab
+- Ship a release by merging with (RELEASE) in the commit subject; the version bump and changelog roll happen on their own
+
 ## [0.1.17]
 
 - Fix the OpenCode Resume list showing only sessions started outside a git checkout; it now lists sessions from every project

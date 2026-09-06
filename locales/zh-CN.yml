@@ -199,6 +199,12 @@ providers.show_settings: 显示 %{provider} 设置
 providers.hide_settings: 隐藏 %{provider} 设置
 providers.enable: 启用 %{provider}
 providers.disable: 禁用 %{provider}
+providers.sign_in_with: 登录 %{provider}
+providers.sign_in_waiting: 正在等待登录…
+providers.sign_in_opens_browser: 在浏览器中打开 CLI 的登录页
+providers.sign_in_on_daemon_host: 在守护进程主机而非本机打开 CLI 的登录页
+providers.signed_out: 未登录
+providers.sign_in_unlocks: 未登录，因此只提供默认模型。登录后可使用该账户的全部模型、恢复其对话并运行其技能。
 providers.disabled_for_new_tasks: 新建任务时不可用
 providers.model_count_one: "%{count} 个模型"
 providers.model_count_many: "%{count} 个模型"
@@ -271,6 +277,10 @@ project.default_folder: 默认文件夹
 project.project_lower: 项目
 project.without_a_project: 不使用项目
 project.your_project: 你的项目
+onboarding.providers_detected_one: 已检测到 %{count} 个智能体 CLI
+onboarding.providers_detected_many: 已检测到 %{count} 个智能体 CLI
+onboarding.no_providers_detected: 尚未在这台电脑上检测到智能体 CLI
+onboarding.set_up_providers: 管理提供方
 onboarding.open_project_to_begin: 打开一个项目即可开始
 onboarding.description: Helm 会在你选择的文件夹中运行编程智能体。代码、任务和历史记录都保留在这台电脑上
 onboarding.web_description: 请选择守护进程主机上的路径，或在不使用项目的情况下开始。
@@ -678,6 +688,7 @@ errors.stop_provider: "无法停止 %{provider}：%{error}"
 errors.switch_provider_model: "无法切换 %{provider} 模型：%{error}"
 errors.change_provider_thinking: "无法更改 %{provider} 的思考强度：%{error}"
 errors.open_provider_session: "无法打开 %{provider} 会话：%{error}"
+errors.select_model_unsupported: "%{provider} 未提供可选模型。通常是其 CLI 未登录 — 请在设置中登录后重试。"
 errors.select_model: "无法选择模型：%{error}"
 errors.read_provider_event_stream: "无法读取 %{provider} 事件流：%{error}"
 errors.answer_provider_permission: "无法响应 %{provider} 的权限请求：%{error}"
@@ -1008,6 +1019,11 @@ usage.refresh_failed: "用量刷新失败：%{error}"
 usage.context_used: 上下文窗口已使用 %{percent}%（%{shortcut}）
 usage.shortcut: 用量（%{shortcut}）
 usage.context_window: 上下文窗口
+usage.plan_quota: 套餐余量
+usage.quota_remaining: 剩余 %{percent}%
+usage.quota_not_configured: 未登录
+usage.quota_unmetered: 未报告计量上限
+usage.quota_unavailable: 无法获取余量
 usage.plan_limits: 套餐用量限额
 usage.plan_limits_named: 套餐用量限额 · %{plan}
 usage.open_account_settings: 打开账户用量设置

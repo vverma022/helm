@@ -999,6 +999,11 @@ fn derive_history(
 
     let mut model_slices: Vec<ModelSlice> = models
         .into_iter()
+        // A model that processed nothing and cost nothing is not a line in a
+        // spend breakdown. Claude Code tags its locally generated messages
+        // `<synthetic>` and gives them an all-zero usage block, so they
+        // aggregate into a row that can never carry a figure.
+        .filter(|(_, (model_cost, model_tokens))| *model_tokens > 0 || *model_cost > 0.0)
         .map(
             |((provider, model), (model_cost, model_tokens))| ModelSlice {
                 provider,
@@ -1226,6 +1231,43 @@ mod tests {
             },
         })
         .to_string()
+    }
+
+    #[test]
+    fn zero_usage_models_are_not_breakdown_rows() {
+        let day = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
+        let mut aggregator = Aggregator::new(day, day, &[]);
+        let real = aggregator
+            .buckets
+            .entry((day, UsageProvider::Claude, "claude-opus-5".to_owned()))
+            .or_default();
+        real.totals.output = 10;
+        real.cost_usd = 1.0;
+        // Claude Code's locally generated messages: a real model key with an
+        // all-zero usage block behind it.
+        aggregator
+            .buckets
+            .entry((day, UsageProvider::Claude, "<synthetic>".to_owned()))
+            .or_default();
+
+        let history = derive_history(
+            aggregator,
+            UsageWindow::TrailingDays(1),
+            day,
+            day,
+            PricingStatus::Fresh,
+            0,
+            0,
+            Vec::new(),
+            Duration::from_secs(0),
+        );
+
+        let models = history
+            .models
+            .iter()
+            .map(|slice| slice.model.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(models, vec!["claude-opus-5"]);
     }
 
     #[test]

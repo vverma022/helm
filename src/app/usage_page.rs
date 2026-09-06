@@ -11,6 +11,7 @@ use chrono::{Datelike, Local, NaiveDate};
 use gpui::{PathBuilder, relative};
 
 use super::*;
+use crate::usage::reset_label;
 use crate::usage_history::{
     self, MONTHLY_WINDOW, MonthSlice, PricingStatus, ProjectSlice, ProviderDay, UsageHistory,
     UsageProvider, UsageWindow, WINDOW_CHOICES,
@@ -48,6 +49,15 @@ impl Helm {
         self.settings_scroll.set_offset(gpui::Point::default());
         if page == SettingsPage::Usage {
             self.ensure_usage_history(false, cx);
+            // The quota strip is the reason to open this page, so treat the
+            // visit like an opened meter popover: mark every fetchable
+            // provider stale and let the pump honor it under its backoff.
+            for provider in usage_meter::PLAN_USAGE_PROVIDERS {
+                if self.provider_enabled(provider) {
+                    self.plan_usage_stale.insert(provider);
+                }
+            }
+            self.maybe_refresh_plan_usage(cx);
         }
         if page == SettingsPage::Skills {
             self.ensure_skills_catalog(false, cx);
@@ -191,7 +201,8 @@ impl Helm {
                     element.flex_1().min_h_0().pb(px(16.0))
                 },
             )
-            .child(self.render_usage_header(range, pending, &theme, cx));
+            .child(self.render_usage_header(range, pending, &theme, cx))
+            .children(self.render_plan_quota(&theme));
 
         let Some(history) = history else {
             // First scan (or a window-shape switch) still in flight: a
@@ -209,23 +220,33 @@ impl Helm {
         page = match self.usage_view {
             UsageViewMode::Daily => page
                 .child(
-                    div()
-                        .mt(px(20.0))
+                    usage_card(&theme)
+                        .mt(px(16.0))
                         .flex()
                         .items_start()
                         .gap(px(28.0))
                         .child(self.render_usage_summary(history, &theme, cx))
                         .child(self.render_usage_chart_column(history, &theme, cx)),
                 )
-                .child(usage_metric_strip(history, &theme))
+                .child(
+                    usage_card(&theme)
+                        .mt(px(12.0))
+                        .p(px(0.0))
+                        .child(usage_metric_strip(history, &theme)),
+                )
                 .child(
                     div()
-                        .mt(px(24.0))
+                        .mt(px(12.0))
                         .flex()
-                        .items_start()
-                        .gap(px(32.0))
-                        .child(self.render_usage_breakdown(history, &theme, cx))
-                        .child(usage_quality_panel(history, &theme)),
+                        .items_stretch()
+                        .gap(px(12.0))
+                        .child(
+                            usage_card(&theme)
+                                .flex_1()
+                                .min_w(px(0.0))
+                                .child(self.render_usage_breakdown(history, &theme, cx)),
+                        )
+                        .child(usage_card(&theme).child(usage_quality_panel(history, &theme))),
                 ),
             UsageViewMode::Monthly => page.child(usage_month_list(
                 self,
@@ -258,6 +279,166 @@ impl Helm {
 
     /// The range caption plus the view switcher, the window selector (when
     /// the view honors it), and the refresh control.
+    /// What is left of each provider's plan, side by side. The snapshots are
+    /// already fetched off-thread for the footer meter, which can only show
+    /// the selected session's provider one at a time; this reads the same
+    /// store so a frame here costs a map lookup. Only installed, enabled
+    /// providers appear — a card for a CLI the machine does not have would
+    /// imply an account the reader has no way to fill in.
+    fn render_plan_quota(&self, theme: &Theme) -> Option<Div> {
+        let now = unix_time() as i64;
+        let providers = usage_meter::PLAN_USAGE_PROVIDERS
+            .into_iter()
+            .filter(|provider| self.provider_enabled(*provider))
+            .collect::<Vec<_>>();
+        if providers.is_empty() {
+            return None;
+        }
+
+        let mut grid = div().flex().flex_wrap().gap(px(10.0));
+        for provider in providers {
+            let plan = self.plan_usage.get(&provider);
+            let error = self.plan_usage_error.get(&provider);
+            let unconfigured = self.plan_usage_unconfigured.contains(&provider);
+            let caption = match plan.and_then(|plan| plan.plan_label.as_deref()) {
+                Some(label) => Some(label.to_owned()),
+                None if unconfigured => Some(tr!("usage.quota_not_configured")),
+                None if error.is_some() => error.cloned(),
+                None => None,
+            };
+
+            let mut card = div()
+                .w(px(236.0))
+                .flex_grow(1.0)
+                .p(px(12.0))
+                .rounded(px(9.0))
+                .border_1()
+                .border_color(theme.border)
+                .flex()
+                .flex_col()
+                .gap(px(9.0))
+                .child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap(px(7.0))
+                        .child(icon(
+                            provider_icon(provider),
+                            13.0,
+                            provider_color(theme, provider),
+                        ))
+                        .child(
+                            div()
+                                .flex_1()
+                                .min_w(px(0.0))
+                                .truncate()
+                                .text_size(sp(12.5))
+                                .font_weight(FontWeight::MEDIUM)
+                                .text_color(theme.text)
+                                .child(provider.display_name()),
+                        )
+                        .children(caption.map(|caption| {
+                            div()
+                                .flex_none()
+                                .max_w(px(120.0))
+                                .truncate()
+                                .text_size(sp(12.5))
+                                .text_color(theme.text_tertiary)
+                                .child(SharedString::from(caption))
+                        })),
+                );
+
+            match plan {
+                // A provider that reports a plan but no window has nothing
+                // metered — say so rather than drawing an empty card body.
+                Some(plan) if plan.windows.is_empty() => {
+                    card = card.child(
+                        div()
+                            .text_size(sp(12.5))
+                            .text_color(theme.text_tertiary)
+                            .child(tr!("usage.quota_unmetered")),
+                    );
+                }
+                Some(plan) => {
+                    for window in &plan.windows {
+                        card = card.child(
+                            div()
+                                .flex()
+                                .flex_col()
+                                .gap(px(6.0))
+                                .child(
+                                    div()
+                                        .flex()
+                                        .items_center()
+                                        .gap(px(8.0))
+                                        .text_size(sp(12.5))
+                                        .child(
+                                            div()
+                                                .flex_1()
+                                                .min_w(px(0.0))
+                                                .truncate()
+                                                .text_color(theme.text_secondary)
+                                                .child(SharedString::from(window.label.clone())),
+                                        )
+                                        .children(window.resets_at.map(|resets_at| {
+                                            div().flex_none().text_color(theme.text_tertiary).child(
+                                                SharedString::from(reset_label(resets_at, now)),
+                                            )
+                                        }))
+                                        .child(
+                                            // The headline is what is left,
+                                            // not what is spent: the question
+                                            // a quota page is opened to answer.
+                                            div()
+                                                .flex_none()
+                                                .font_weight(FontWeight::MEDIUM)
+                                                .text_color(theme.text)
+                                                .child(SharedString::from(tr!(
+                                                    "usage.quota_remaining",
+                                                    percent = format!(
+                                                        "{:.0}",
+                                                        (100.0 - window.percent).max(0.0)
+                                                    )
+                                                ))),
+                                        ),
+                                )
+                                .child(usage_meter::meter_bar(theme, window.percent)),
+                        );
+                    }
+                }
+                None => {
+                    card = card.child(
+                        div()
+                            .text_size(sp(12.5))
+                            .text_color(theme.text_tertiary)
+                            .child(if unconfigured || error.is_some() {
+                                tr!("usage.quota_unavailable")
+                            } else {
+                                tr!("common.checking")
+                            }),
+                    );
+                }
+            }
+            grid = grid.child(card);
+        }
+
+        Some(
+            div()
+                .pt(px(16.0))
+                .flex()
+                .flex_col()
+                .gap(px(10.0))
+                .child(
+                    div()
+                        .text_size(sp(12.5))
+                        .font_weight(FontWeight::MEDIUM)
+                        .text_color(theme.text)
+                        .child(tr!("usage.plan_quota")),
+                )
+                .child(grid),
+        )
+    }
+
     fn render_usage_header(
         &self,
         range: (NaiveDate, NaiveDate),
@@ -298,7 +479,7 @@ impl Helm {
                     } else {
                         theme.text_secondary
                     })
-                    .when(selected, |element| element.bg(theme.overlay))
+                    .when(selected, |element| element.bg(theme.accent.opacity(0.16)))
                     .when(!selected, |element| {
                         element.hover(|element| element.text_color(theme.text))
                     })
@@ -592,7 +773,7 @@ impl Helm {
                     } else {
                         theme.text_secondary
                     })
-                    .when(selected, |element| element.bg(theme.overlay))
+                    .when(selected, |element| element.bg(theme.accent.opacity(0.16)))
                     .when(!selected, |element| {
                         element.hover(|element| element.text_color(theme.text))
                     })
@@ -607,7 +788,7 @@ impl Helm {
         }
 
         let mut legend = div().flex().items_center().gap(px(14.0));
-        for provider in UsageProvider::ALL {
+        for provider in usage_visible_providers(history) {
             let kind = provider_kind(provider);
             legend = legend.child(
                 div()
@@ -760,10 +941,7 @@ impl Helm {
         }
 
         let hover = self.usage_chart_hover.filter(|index| *index < day_count);
-        let colors = [
-            provider_color(theme, ProviderKind::Claude),
-            provider_color(theme, ProviderKind::Codex),
-        ];
+        let colors = usage_provider_colors(theme);
         let bounds_cell = self.usage_chart_bounds.clone();
         let paint_series = series.clone();
         let paint_ticks = ticks.clone();
@@ -992,7 +1170,7 @@ impl Helm {
                     } else {
                         theme.text_secondary
                     })
-                    .when(selected, |element| element.bg(theme.overlay))
+                    .when(selected, |element| element.bg(theme.accent.opacity(0.16)))
                     .when(!selected, |element| {
                         element.hover(|element| element.text_color(theme.text))
                     })
@@ -1522,7 +1700,7 @@ fn usage_chart_readout(
                 .child(SharedString::from(format_day_short(day))),
         );
     let mut total = 0.0;
-    for provider in UsageProvider::ALL {
+    for provider in usage_visible_providers(history) {
         let kind = provider_kind(provider);
         let amount = value(provider);
         total += amount;
@@ -1638,12 +1816,7 @@ fn usage_metric_strip(history: &UsageHistory, theme: &Theme) -> Div {
         ),
     ];
 
-    let mut strip = div()
-        .mt(px(24.0))
-        .border_t_1()
-        .border_b_1()
-        .border_color(theme.border)
-        .flex();
+    let mut strip = div().flex();
     for (index, (label, value, detail)) in tiles.into_iter().enumerate() {
         strip = strip.child(
             div()
@@ -1778,7 +1951,8 @@ fn usage_day_table(history: &UsageHistory, theme: &Theme) -> Div {
         .text_size(sp(12.5))
         .text_color(theme.text_tertiary)
         .child(div().flex_1().min_w_0().child(tr!("usage.day")));
-    for provider in UsageProvider::ALL {
+    let providers = usage_visible_providers(history);
+    for provider in &providers {
         header = header.child(usage_cell(
             84.0,
             provider.label().to_owned(),
@@ -1808,7 +1982,7 @@ fn usage_day_table(history: &UsageHistory, theme: &Theme) -> Div {
                     .text_color(theme.text)
                     .child(SharedString::from(format_day_short(day.day))),
             );
-        for provider in UsageProvider::ALL {
+        for provider in &providers {
             row = row.child(usage_cell(
                 84.0,
                 format_usd(day.by_provider[provider.index()].cost_usd),
@@ -2058,6 +2232,40 @@ fn usage_skeleton(view: UsageViewMode, theme: &Theme) -> AnyElement {
 /// the window could be priced so the bars still mean something.
 fn rank_by_cost(history: &UsageHistory) -> bool {
     history.cost_usd > 0.0
+}
+
+/// The page's one surface treatment. Sections were bare divs separated only by
+/// margin, which left the whole page reading as a single dark field with
+/// numbers scattered through it; giving each its own panel is what separates
+/// them.
+fn usage_card(theme: &Theme) -> Div {
+    div()
+        .p(px(16.0))
+        .rounded(px(10.0))
+        .border_1()
+        .border_color(theme.border)
+        .bg(theme.raised)
+}
+
+/// The providers worth a swatch, a column or a readout row: only those with
+/// usage in the window. A provider that has never run on this machine
+/// contributes an all-zero series, and drawing its legend entry and table
+/// column implies an account the reader does not have.
+fn usage_visible_providers(history: &UsageHistory) -> Vec<UsageProvider> {
+    let visible = UsageProvider::ALL
+        .into_iter()
+        .filter(|provider| {
+            history.providers.iter().any(|slice| {
+                slice.provider == *provider && (slice.total_tokens > 0 || slice.cost_usd > 0.0)
+            })
+        })
+        .collect::<Vec<_>>();
+    if visible.is_empty() {
+        // Nothing recorded at all. The page keeps its full shape rather than
+        // collapsing to a table with no provider columns at all.
+        return UsageProvider::ALL.to_vec();
+    }
+    visible
 }
 
 fn usage_provider_colors(theme: &Theme) -> [Hsla; 2] {

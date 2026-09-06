@@ -226,6 +226,32 @@ impl Backend for HelmBackend {
                 }
                 Ok(ResponsePayload::ProviderProbe { probe, version })
             }
+            Command::ProviderSignIn {
+                provider,
+                binary_override,
+            } => {
+                ensure_shell_environment();
+                let probe = crate::model::provider_probe(provider, binary_override.as_deref());
+                let binary = probe.path.ok_or_else(|| {
+                    anyhow::anyhow!(tr!(
+                        "errors.provider_not_installed",
+                        provider = provider.display_name()
+                    ))
+                })?;
+                // The CLI drives its own browser hand-off and can sit waiting
+                // for the callback for minutes. Detaching keeps the daemon's
+                // request loop free; the client learns the outcome by
+                // re-probing, which is what it already does after any
+                // provider change.
+                let mut command = crate::command_env::command(&binary);
+                command
+                    .arg("login")
+                    .stdin(std::process::Stdio::null())
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null());
+                command.spawn()?;
+                Ok(ResponsePayload::Ack)
+            }
             Command::FetchPlanUsage {
                 provider,
                 binary_override,
@@ -1712,6 +1738,7 @@ fn handle_driver_command(
         | Command::GetSettings
         | Command::UpdateSettings { .. }
         | Command::ProbeProvider { .. }
+        | Command::ProviderSignIn { .. }
         | Command::FetchPlanUsage { .. }
         | Command::ProbeComputerPermissions { .. }
         | Command::LoadUsageHistory { .. }
