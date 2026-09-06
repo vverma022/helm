@@ -3,4 +3,14 @@ import type { ComputerAppGrant } from "./ComputerAppGrant";
 import type { ProviderKind } from "./ProviderKind";
 import type { JsonValue } from "./serde_json/JsonValue";
 
-export type DaemonSettings = { computer_use_enabled: boolean, computer_use_allowed_apps: Array<ComputerAppGrant>, disabled_providers: Array<ProviderKind>, provider_binary_overrides: { [key in ProviderKind]?: string }, } & ({ [key in string]: number | string | boolean | Array<JsonValue> | { [key in string]: JsonValue } | null });
+export type DaemonSettings = { computer_use_enabled: boolean, computer_use_allowed_apps: Array<ComputerAppGrant>, disabled_providers: Array<ProviderKind>, provider_binary_overrides: { [key in ProviderKind]?: string },
+/**
+ * Hide tasks whose last reply is older than this many days behind a
+ * collapsed group. `None` keeps every task in its date group.
+ *
+ * Archiving is derived, never stored: nothing is written per session and
+ * nothing is deleted, so lowering or clearing this brings tasks straight
+ * back. It lives with the daemon because the session store does, and all
+ * three clients have to agree on what is hidden.
+ */
+archive_after_days: number | null, } & ({ [key in string]: number | string | boolean | Array<JsonValue> | { [key in string]: JsonValue } | null });

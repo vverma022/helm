@@ -16,6 +16,15 @@ pub struct DaemonSettings {
     pub disabled_providers: Vec<ProviderKind>,
     #[serde(skip_serializing_if = "HashMap::is_empty")]
     pub provider_binary_overrides: HashMap<ProviderKind, String>,
+    /// Hide tasks whose last reply is older than this many days behind a
+    /// collapsed group. `None` keeps every task in its date group.
+    ///
+    /// Archiving is derived, never stored: nothing is written per session and
+    /// nothing is deleted, so lowering or clearing this brings tasks straight
+    /// back. It lives with the daemon because the session store does, and all
+    /// three clients have to agree on what is hidden.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub archive_after_days: Option<u32>,
     #[serde(flatten)]
     pub extra: BTreeMap<String, Value>,
 }
@@ -27,6 +36,7 @@ impl Default for DaemonSettings {
             computer_use_allowed_apps: Vec::new(),
             disabled_providers: Vec::new(),
             provider_binary_overrides: HashMap::new(),
+            archive_after_days: None,
             extra: BTreeMap::new(),
         }
     }

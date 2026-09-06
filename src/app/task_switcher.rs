@@ -190,16 +190,6 @@ fn task_switcher_branch(workspace: &SessionWorkspace) -> Option<&str> {
     .filter(|branch| !branch.is_empty())
 }
 
-fn task_switcher_status_icon(status: SessionStatus) -> Option<&'static str> {
-    match status {
-        SessionStatus::Idle => None,
-        SessionStatus::Connecting | SessionStatus::Working => Some("icons/loader-circle.svg"),
-        SessionStatus::Background => Some("icons/hourglass.svg"),
-        SessionStatus::Waiting => Some("icons/alert.svg"),
-        SessionStatus::Failed => Some("icons/x.svg"),
-    }
-}
-
 impl Helm {
     pub(super) fn switch_task_forward_action(
         &mut self,
@@ -487,7 +477,9 @@ impl Helm {
         let branch = task_switcher_branch(&session.workspace).map(SharedString::from);
         let timestamp = session.last_reply_at.unwrap_or(session.created_at);
         let time = super::sidebar::format_time_ago(unix_time().saturating_sub(timestamp));
-        let status_icon = task_switcher_status_icon(session.status);
+        // The switcher lists only started sessions, so idle means finished.
+        let started = session.has_started();
+        let status_glyph = status_icon(session.status, started);
         let provider = session.provider;
         let model = session
             .model
@@ -528,8 +520,23 @@ impl Helm {
                             .text_color(theme.text_secondary)
                             .child(provider.display_name()),
                     )
-                    .when_some(status_icon, |row, icon_path| {
-                        row.child(icon(icon_path, 12.0, status_color(&theme, session.status)))
+                    .when_some(status_glyph, |row, icon_path| {
+                        row.child(
+                            div()
+                                .id("task-switcher-status")
+                                .flex_none()
+                                .flex()
+                                .items_center()
+                                .when_some(
+                                    status_label(session.status, started),
+                                    |element, label| element.tooltip(Tooltip::text(label)),
+                                )
+                                .child(icon(
+                                    icon_path,
+                                    12.0,
+                                    status_color(&theme, session.status, started),
+                                )),
+                        )
                     }),
             )
             .child(

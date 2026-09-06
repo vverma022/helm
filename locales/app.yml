@@ -545,11 +545,23 @@ sidebar.resize:
 sidebar.status_working:
   en: Working
 sidebar.status_waiting:
-  en: Waiting
+  en: Needs your input
 sidebar.status_background:
   en: Waiting for background tasks
 sidebar.status_failed:
   en: Failed
+sidebar.status_done:
+  en: Done
+sidebar.group_archived:
+  en: Archived
+settings.archive_tasks:
+  en: Archive older tasks
+settings.archive_tasks_description:
+  en: Tasks with no reply for this long collapse into an Archived section. Nothing is deleted, and lowering this brings them back.
+settings.archive_never:
+  en: Never
+settings.archive_after_days:
+  en: After %{count} days
 
 project.new_project:
   en: New project…

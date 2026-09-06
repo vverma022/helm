@@ -198,13 +198,45 @@ pub fn provider_icon(provider: ProviderKind) -> &'static str {
     }
 }
 
-pub fn status_color(theme: &Theme, status: SessionStatus) -> Hsla {
+/// `started` separates a task that has finished a turn from one that was never
+/// prompted. Both are [`SessionStatus::Idle`], and only the first has an
+/// outcome worth showing.
+pub fn status_color(theme: &Theme, status: SessionStatus, started: bool) -> Hsla {
     match status {
+        SessionStatus::Idle if started => theme.success,
         SessionStatus::Idle => theme.text_ghost,
         SessionStatus::Connecting | SessionStatus::Working => theme.accent,
-        SessionStatus::Background => theme.text_secondary,
+        // Detached work is still running, so it reads as live rather than as
+        // the dead grey it used to share with an untouched task. The hourglass
+        // is what separates it from a working spinner.
+        SessionStatus::Background => theme.accent,
         SessionStatus::Waiting => theme.warning,
         SessionStatus::Failed => theme.danger,
+    }
+}
+
+/// The glyph paired with [`status_color`], so status never rests on color
+/// alone. `None` means the state has nothing to report: an untouched task.
+pub fn status_icon(status: SessionStatus, started: bool) -> Option<&'static str> {
+    match status {
+        SessionStatus::Idle => started.then_some("icons/check.svg"),
+        SessionStatus::Connecting | SessionStatus::Working => Some("icons/loader-circle.svg"),
+        SessionStatus::Background => Some("icons/hourglass.svg"),
+        SessionStatus::Waiting => Some("icons/alert.svg"),
+        SessionStatus::Failed => Some("icons/x.svg"),
+    }
+}
+
+/// What the status glyph means, in words. GPUI has no screen-reader tree, so
+/// a bare 12px icon is otherwise unexplainable — this is what makes the
+/// vocabulary learnable on hover.
+pub fn status_label(status: SessionStatus, started: bool) -> Option<String> {
+    match status {
+        SessionStatus::Idle => started.then(|| tr!("sidebar.status_done")),
+        SessionStatus::Connecting | SessionStatus::Working => Some(tr!("sidebar.status_working")),
+        SessionStatus::Background => Some(tr!("sidebar.status_background")),
+        SessionStatus::Waiting => Some(tr!("sidebar.status_waiting")),
+        SessionStatus::Failed => Some(tr!("sidebar.status_failed")),
     }
 }
 
