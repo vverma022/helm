@@ -16,6 +16,8 @@ the original feature bullet instead of adding separate entries for them.
 
 ## [unreleased]
 
+## [0.3.0]
+
 - See which tasks are finished: a completed task now carries a green check instead of nothing at all, and every status marker names itself on hover — including "Needs your input" for a task paused on a permission or a question
 - Keep the task list to what you are actually working on: choose how long a quiet task stays in the list under Settings → General, and older ones fold into a collapsed Archived section. Nothing is deleted, and clearing the setting brings every task straight back
 - Follow what an agent delegates: subagents are now nested under whatever spawned them rather than listed flat, on both Codex and Claude
