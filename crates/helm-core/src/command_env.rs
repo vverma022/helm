@@ -25,11 +25,12 @@ use std::os::unix::process::CommandExt;
 const LOGIN_SHELL_ENV_TIMEOUT: Duration = Duration::from_secs(5);
 #[cfg(unix)]
 const INTERACTIVE_SHELL_ENV_TIMEOUT: Duration = Duration::from_secs(3);
-#[cfg(unix)]
 /// Opens the interactive terminal with this shell instead of the account's
-/// login shell, and without login arguments.
+/// login shell, and without login arguments. Read on every platform, so it
+/// must not be gated.
 pub const TERMINAL_SHELL_OVERRIDE: &str = "HELM_TERMINAL_SHELL";
 
+#[cfg(unix)]
 const SHELL_ENV_COMMAND: &str = "/usr/bin/env -0 > \"$HELM_SHELL_ENV_CAPTURE_FILE\"";
 
 type ShellEnvironment = Vec<(OsString, OsString)>;
