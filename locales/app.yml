@@ -960,6 +960,8 @@ models.favorite_hint:
   en: Star a model to keep it here
 models.loading:
   en: Loading models…
+models.signed_out:
+  en: Signed out — sign in from Settings › Providers
 models.none_reported:
   en: No models reported by this provider
 models.no_providers:

@@ -469,6 +469,7 @@ composer.no_providers: 请安装或启用一个服务商后再发送
 models.none_found: 未找到模型
 models.favorite_hint: 为模型加星标即可固定在这里
 models.loading: 正在加载模型…
+models.signed_out: 未登录 — 请在设置 › 提供方中登录
 models.none_reported: 此服务商未提供任何模型
 models.no_providers: 无可用服务商
 models.no_providers_title: 没有可用的服务商
