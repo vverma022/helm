@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Moon, Sun } from 'lucide-react'
 
 type Theme = 'dark' | 'light'
@@ -7,13 +7,15 @@ type Theme = 'dark' | 'light'
  *  The initial class is set by an inline script in __root so there is no flash,
  *  and this only has to stay in step with it. */
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>('dark')
-
-  useEffect(() => {
-    setTheme(
-      document.documentElement.classList.contains('dark') ? 'dark' : 'light',
-    )
-  }, [])
+  // The inline script in __root has already stamped the class before React
+  // runs, so the first client render can read the real theme instead of
+  // correcting it after paint.
+  const [theme, setTheme] = useState<Theme>(() =>
+    typeof document === 'undefined' ||
+    document.documentElement.classList.contains('dark')
+      ? 'dark'
+      : 'light',
+  )
 
   function toggle() {
     const next: Theme = theme === 'dark' ? 'light' : 'dark'
@@ -31,7 +33,10 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+      suppressHydrationWarning
+      aria-label={
+        theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'
+      }
       className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
     >
       {theme === 'dark' ? (

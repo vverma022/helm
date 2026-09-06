@@ -1,7 +1,5 @@
 import { HelmMark } from '@/components/helm-mark'
 
-const YEAR = new Date().getFullYear()
-
 /** The page's closing statement as well as its navigation: the mark is set
  *  large here because this is the last thing a visitor sees. */
 export function SiteFooter({
@@ -82,7 +80,11 @@ export function SiteFooter({
         </div>
 
         <div className="mt-14 flex flex-wrap items-center justify-between gap-4 border-t pt-7 text-xs text-muted-foreground">
-          <span>© {YEAR} Helm</span>
+          {/* Rendered on both server and client; suppressed so a year
+              boundary between the two cannot warn. */}
+          <span suppressHydrationWarning>
+            © {new Date().getFullYear()} Helm
+          </span>
           <span className="font-mono tracking-[0.12em] uppercase">
             Built with Rust &amp; GPUI
           </span>
