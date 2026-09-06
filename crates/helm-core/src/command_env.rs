@@ -26,6 +26,10 @@ const LOGIN_SHELL_ENV_TIMEOUT: Duration = Duration::from_secs(5);
 #[cfg(unix)]
 const INTERACTIVE_SHELL_ENV_TIMEOUT: Duration = Duration::from_secs(3);
 #[cfg(unix)]
+/// Opens the interactive terminal with this shell instead of the account's
+/// login shell, and without login arguments.
+pub const TERMINAL_SHELL_OVERRIDE: &str = "HELM_TERMINAL_SHELL";
+
 const SHELL_ENV_COMMAND: &str = "/usr/bin/env -0 > \"$HELM_SHELL_ENV_CAPTURE_FILE\"";
 
 type ShellEnvironment = Vec<(OsString, OsString)>;
@@ -623,6 +627,16 @@ fn windows_shell_candidates() -> Vec<PathBuf> {
 /// Pick the user's configured login shell for an interactive terminal, with a
 /// platform shell as a final fallback when desktop launchers omit `SHELL`.
 pub fn default_terminal_shell() -> PathBuf {
+    // An explicit override skips the account lookup entirely. Tests use it to
+    // pin a plain shell, because a login shell reads the host's rc files and
+    // its start-up cost is unbounded on a loaded machine.
+    if let Some(shell) = std::env::var_os(TERMINAL_SHELL_OVERRIDE)
+        .map(PathBuf::from)
+        .filter(|shell| shell.is_file())
+    {
+        return shell;
+    }
+
     let mut candidates = Vec::new();
     // The shell the user chose outranks whatever `SHELL` was inherited from;
     // see the note in helm-client's `unix_terminal_shell_candidates`. The
@@ -656,6 +670,13 @@ fn default_terminal_shell_fallback() -> PathBuf {
 /// and passing it here is an error. Suppressing its banner is the one thing
 /// worth saying.
 pub fn default_terminal_shell_args(shell: &Path) -> Vec<String> {
+    // An overridden shell was chosen deliberately, so it is opened as asked
+    // rather than as a login shell: `-l` is what pulls in the rc files the
+    // override exists to avoid.
+    if std::env::var_os(TERMINAL_SHELL_OVERRIDE).is_some() {
+        return Vec::new();
+    }
+
     #[cfg(not(windows))]
     {
         let _ = shell;

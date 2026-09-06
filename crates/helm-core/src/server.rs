@@ -1561,6 +1561,17 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn websocket_terminal_round_trip_streams_input_and_output() {
+        // A login shell reads the host's rc files before it echoes anything,
+        // and on a loaded CI machine that cost is unbounded -- zsh sourcing
+        // /etc/zprofile runs path_helper, and a shell under job control can
+        // then ignore the SIGHUP that closing the terminal sends. None of that
+        // is what this test is checking, so it pins a plain /bin/sh. Only this
+        // test opens a daemon terminal, so the process-wide variable is not
+        // racing another one.
+        unsafe {
+            std::env::set_var(crate::command_env::TERMINAL_SHELL_OVERRIDE, "/bin/sh");
+        }
+
         let root = std::env::temp_dir().join(format!("helm-terminal-{}", Uuid::new_v4()));
         std::fs::create_dir_all(&root).unwrap();
         let backend = HelmBackend::new(
