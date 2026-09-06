@@ -29,6 +29,7 @@ the original feature bullet instead of adding separate entries for them.
 - Read the changelog on the website
 - Hide a signed-out provider's models from the picker instead of offering one the agent then refuses, and say what to do when a provider has no model to choose
 - Put starred models at the top of every model list, not only the favorites tab
+- Ship a release by merging with (RELEASE) in the commit subject; the version bump and changelog roll happen on their own
 
 ## [0.1.17]
 
