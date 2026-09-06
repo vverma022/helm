@@ -10,5 +10,7 @@ temp/
 
 .DS_Store
 
-# Personal development blueprint, not part of the repo.
+# Personal planning and orientation notes, not part of the repo.
 INTENT.md
+ARCHITECTURE.md
+ROADMAP.md

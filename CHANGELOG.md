@@ -18,6 +18,8 @@ the original feature bullet instead of adding separate entries for them.
 
 ## [0.2.0]
 
+- Close a terminal without the risk of hanging: a shell that ignores the hang-up signal is now killed rather than waited on forever
+
 - Group the sidebar by project by default, and keep a section for every project you open so a new one is visible, with its own compose button, before it has any history
 - Start new tasks on a provider that is actually installed instead of always defaulting to Codex, and move off a provider whose CLI is removed or switched off
 - Show what the first run found: the welcome screen lists the agent CLIs detected on this machine and links to provider setup
@@ -29,7 +31,7 @@ the original feature bullet instead of adding separate entries for them.
 - Give the selected task and settings page the accent colour, so selection no longer looks identical to whatever the pointer is resting on
 - Leave models that processed nothing out of the usage breakdown
 - Read the changelog on the website
-- Hide a signed-out provider's models from the picker instead of offering one the agent then refuses, and say what to do when a provider has no model to choose
+- Say when an agent CLI is signed out rather than offering a model it would refuse, re-check when the model picker opens so signing in outside Helm is noticed without a restart, and say what to do when a provider has no model to choose
 - Put starred models at the top of every model list, not only the favorites tab
 - Ship a release by merging with (RELEASE) in the commit subject; the version bump and changelog roll happen on their own
 

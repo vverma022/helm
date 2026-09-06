@@ -58,7 +58,7 @@ if [ "$profile" = "debug" ] && [ "$codesign_identity_from_environment" = "0" ] &
   mkdir -p "$(dirname "$debug_identity_cache")"
   printf '%s\n' "$codesign_identity" > "$debug_identity_cache"
 fi
-debug_adhoc_requirement="=designated => identifier \"$bundle_identifier\""
+adhoc_requirement="=designated => identifier \"$bundle_identifier\""
 if [ "${HELM_SKIP_CARGO_BUILD:-0}" != "1" ]; then
   if [ "$profile" = "release" ]; then
     cargo build --release --package helm --bin helm --bin helm_js_repl --package helm-daemon --bin helm-daemon
@@ -193,16 +193,15 @@ if [ "$codesign_identity" = "-" ]; then
   if [ "$profile" = "release" ]; then
     codesign --force --identifier "$bundle_identifier.daemon" --sign - "$daemon_executable"
   fi
-  if [ "$profile" = "debug" ]; then
-    # An ordinary ad-hoc signature's designated requirement contains its
-    # changing code hash, so macOS TCC treats every rebuild as a different app
-    # and repeatedly asks for Files & Folders access. The development-only
-    # bundle id is a stable local identity even when no trusted Apple
-    # Development certificate is installed.
-    codesign --force --identifier "$bundle_identifier" --requirements "$debug_adhoc_requirement" --sign - "$bundle"
-  else
-    codesign --force --sign - "$bundle"
-  fi
+  # An ordinary ad-hoc signature's designated requirement contains its changing
+  # code hash, which breaks two things. macOS TCC treats every rebuild as a
+  # different app and repeatedly asks for Files & Folders access. And Sparkle
+  # refuses an update whose bundle does not satisfy the installed bundle's
+  # designated requirement, so a cdhash requirement makes every ad-hoc build
+  # un-updatable: the next version necessarily hashes differently. Pinning the
+  # requirement to the bundle id keeps a stable identity across builds, which
+  # is what both checks actually want.
+  codesign --force --identifier "$bundle_identifier" --requirements "$adhoc_requirement" --sign - "$bundle"
 elif [ "$profile" = "release" ]; then
   codesign --force --options runtime --timestamp --sign "$codesign_identity" "$sparkle_framework/Versions/B/Autoupdate"
   codesign --force --options runtime --timestamp --sign "$codesign_identity" "$sparkle_framework/Versions/B/Updater.app"
