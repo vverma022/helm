@@ -1039,6 +1039,14 @@ mod tests {
         );
     }
 
+    /// How long the test below waits for PowerShell, which is unrelated to the
+    /// production budgets above: those are tight because they run on the
+    /// startup path, while this only has to outlast a cold `powershell.exe`
+    /// on a shared CI runner with the rest of the suite competing for it.
+    /// Ten seconds was not enough and failed the build for no defect.
+    #[cfg(windows)]
+    const WINDOWS_ENV_PROBE_TEST_TIMEOUT: Duration = Duration::from_secs(90);
+
     /// The probe script must execute as written against the in-box Windows
     /// PowerShell: `-NoProfile` leaves the child `PATH` untouched, so the
     /// captured value is exactly the one this process inherited.
@@ -1056,7 +1064,7 @@ mod tests {
             .stderr(Stdio::null());
         let mut child = spawn(&mut command).expect("spawn PowerShell probe");
         assert!(
-            wait_for_child(&mut child, Duration::from_secs(10)),
+            wait_for_child(&mut child, WINDOWS_ENV_PROBE_TEST_TIMEOUT),
             "PowerShell probe did not finish in time"
         );
         let environment =
