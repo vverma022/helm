@@ -372,7 +372,18 @@ jobs:
         windows-arm64,
         macos,
       ]
-    if: needs.version.outputs.published != 'true'
+    # macOS stays in `needs` so its artifacts are waited for, but it no longer
+    # decides whether anyone gets a release. Signing there requires an Apple
+    # Developer ID this project does not have yet, and holding Linux and
+    # Windows hostage to that helps nobody. Those four are still required:
+    # a release missing one of them would be quietly incomplete.
+    if: |
+      always() &&
+      needs.version.outputs.published != 'true' &&
+      needs.linux-x86_64.result == 'success' &&
+      needs.linux-arm64.result == 'success' &&
+      needs.windows-x86_64.result == 'success' &&
+      needs.windows-arm64.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -386,6 +397,32 @@ jobs:
         with:
           path: artifacts
           merge-multiple: true
+
+      - name: Check the platform artifacts arrived
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for pattern in \
+            "artifacts/helm-$VERSION-x86_64-unknown-linux-gnu.tar.gz" \
+            "artifacts/helm-$VERSION-aarch64-unknown-linux-gnu.tar.gz" \
+            "artifacts/Helm-$VERSION-x86_64-Setup.exe" \
+            "artifacts/Helm-$VERSION-aarch64-Setup.exe"; do
+            if ! compgen -G "$pattern" > /dev/null; then
+              echo "::error::Required artifact missing: $pattern"
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] || exit 1
+
+          # macOS is optional only while there is no Developer ID. Say so in
+          # the log, so a silently mac-less release is never a surprise.
+          if compgen -G "artifacts/*.dmg" > /dev/null; then
+            echo "macOS artifacts present."
+          else
+            echo "::warning::No macOS artifacts — this release ships Linux and Windows only."
+          fi
 
       - name: Write the version pointers
         env:
@@ -441,7 +478,9 @@ jobs:
           target_commitish: ${{ github.sha }}
           name: ${{ needs.version.outputs.tag }}
           body_path: release-notes.md
-          fail_on_unmatched_files: true
+          # The macOS patterns are absent whenever that job cannot sign, and
+          # the step above already fails on a missing Linux or Windows build.
+          fail_on_unmatched_files: false
           files: |
             artifacts/*.tar.gz
             artifacts/*.dmg
