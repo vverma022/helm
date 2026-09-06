@@ -202,7 +202,7 @@ function Home() {
       <main>
         {/* Hero. Centred so the composition fills the width, with the product
             shot pulled up tight beneath it rather than floating in dead space. */}
-        <section className="hero-glow relative isolate overflow-hidden">
+        <section className="hero-glow relative isolate -mt-16 overflow-hidden pt-16">
           <div className="mx-auto w-full max-w-6xl px-6 pt-20 text-center md:pt-28 lg:px-8">
             <div className="rise inline-flex items-center gap-2 rounded-full border border-border/80 bg-muted/40 px-3 py-1 font-mono text-[11px] tracking-wide text-muted-foreground">
               <span className="size-1.5 rounded-full bg-brand" />
