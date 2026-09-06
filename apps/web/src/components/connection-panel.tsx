@@ -2,11 +2,11 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { StartupScreen } from '@/components/startup-screen'
-import { WakuIcon } from '@/components/waku-icon'
+import { HelmIcon } from '@/components/helm-icon'
 import { useDocumentTitle } from '@/hooks/use-document-title'
 import { useDaemon } from '@/lib/daemon-context'
 import { useI18n } from '@/lib/i18n'
-import wakuAppIconUrl from '../../../../website/public/app-icon.png'
+import helmAppIconUrl from '../../../../website/public/app-icon.png'
 
 export function ConnectionPanel({ title }: { title?: string } = {}) {
   const { t } = useI18n()
@@ -45,10 +45,10 @@ export function ConnectionPanel({ title }: { title?: string } = {}) {
       <div className="w-full max-w-[520px]">
         <div className="text-center">
           <img
-            alt="Waku"
+            alt="Helm"
             className="mx-auto size-8 rounded-[8px]"
             draggable={false}
-            src={wakuAppIconUrl}
+            src={helmAppIconUrl}
           />
           <h1 className="mt-3 text-xl font-medium tracking-tight">{t('web.connect_title')}</h1>
           <p className="mx-auto mt-2 max-w-sm text-[12.5px] leading-[19px] text-[var(--text-tertiary)]">
@@ -65,7 +65,7 @@ export function ConnectionPanel({ title }: { title?: string } = {}) {
                 autoCorrect="off"
                 className="bg-card"
                 inputMode="url"
-                placeholder="wss://waku.example.com"
+                placeholder="wss://helm.example.com"
                 value={address}
                 onChange={(event) => setAddress(event.target.value)}
               />
@@ -94,7 +94,7 @@ export function ConnectionPanel({ title }: { title?: string } = {}) {
                   variant="ghost"
                   onClick={() => setTokenRevealed((revealed) => !revealed)}
                 >
-                  <WakuIcon name={tokenRevealed ? 'eyeOff' : 'eye'} />
+                  <HelmIcon name={tokenRevealed ? 'eyeOff' : 'eye'} />
                 </Button>
               </div>
             </div>
@@ -120,14 +120,14 @@ export function ConnectionPanel({ title }: { title?: string } = {}) {
             <div className="flex justify-end">
               <Button className="rounded-full px-4" type="submit" disabled={phase === 'connecting'}>
                 {phase === 'connecting' ? t('web.connecting') : t('web.connect')}
-                {phase !== 'connecting' && <WakuIcon name="arrowRight" />}
+                {phase !== 'connecting' && <HelmIcon name="arrowRight" />}
               </Button>
             </div>
           </form>
         </section>
 
         <div className="mt-3 flex gap-2 rounded-lg bg-accent px-3 py-2 text-[10.5px] leading-4 text-[var(--text-tertiary)]">
-          <WakuIcon className="mt-0.5 size-3.5 shrink-0" name="lock" />
+          <HelmIcon className="mt-0.5 size-3.5 shrink-0" name="lock" />
           <p>
             {t('web.security_warning')}
           </p>

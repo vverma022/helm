@@ -2,12 +2,25 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+@import "@fontsource/instrument-serif/400-italic.css";
 
 @custom-variant dark (&:is(.dark *));
 
+/* Follow the OS when no class is set, so the page matches the app's default. */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    color-scheme: dark;
+  }
+}
+
 @theme inline {
+    --color-brand: var(--brand);
+    --color-brand-foreground: var(--brand-foreground);
     --font-heading: var(--font-sans);
-    --font-sans: 'Geist Variable', sans-serif;
+    --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'Geist Mono Variable', ui-monospace, SFMono-Regular, monospace;
+    --font-display: 'Instrument Serif', ui-serif, Georgia, serif;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -49,30 +62,32 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
+    --background: oklch(0.985 0 0);
+    --foreground: oklch(0.185 0 0);
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.145 0 0);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
+    --primary: oklch(0.185 0 0);
     --primary-foreground: oklch(0.985 0 0);
     --secondary: oklch(0.97 0 0);
     --secondary-foreground: oklch(0.205 0 0);
     --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
+    --muted-foreground: oklch(0.505 0 0);
     --accent: oklch(0.97 0 0);
     --accent-foreground: oklch(0.205 0 0);
     --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
+    --border: oklch(0.185 0 0 / 8%);
+    --input: oklch(0.185 0 0 / 10%);
+    --ring: oklch(0.185 0 0 / 28%);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
     --radius: 0.625rem;
+    --brand: oklch(0.578 0.207 27.3);
+    --brand-foreground: oklch(0.99 0 0);
     --sidebar: oklch(0.985 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
     --sidebar-primary: oklch(0.205 0 0);
@@ -84,24 +99,26 @@
 }
 
 .dark {
+    --brand: oklch(0.655 0.196 27.3);
+    --brand-foreground: oklch(0.145 0 0);
     --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
+    --foreground: oklch(0.945 0 0);
     --card: oklch(0.205 0 0);
     --card-foreground: oklch(0.985 0 0);
     --popover: oklch(0.205 0 0);
     --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
+    --primary: oklch(0.945 0 0);
+    --primary-foreground: oklch(0.185 0 0);
     --secondary: oklch(0.269 0 0);
     --secondary-foreground: oklch(0.985 0 0);
     --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
+    --muted-foreground: oklch(0.655 0 0);
     --accent: oklch(0.269 0 0);
     --accent-foreground: oklch(0.985 0 0);
     --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
+    --border: oklch(1 0 0 / 9%);
+    --input: oklch(1 0 0 / 13%);
+    --ring: oklch(1 0 0 / 30%);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
@@ -139,4 +156,130 @@
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-position: center;
   -webkit-mask-size: contain;
+}
+
+/* ── Character ──────────────────────────────────────────────────────────────
+   One orchestrated entrance and one ambient loop. Everything is gated on
+   prefers-reduced-motion, and the page is fully legible with all of it off. */
+
+@keyframes helm-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes helm-turn {
+  to { transform: rotate(360deg); }
+}
+
+.rise {
+  animation: helm-rise 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* The mark is a ship's wheel, so it turns. Slow enough to read as ambient
+   rather than as a spinner waiting on something. */
+.turn {
+  animation: helm-turn 90s linear infinite;
+}
+
+/* A single red wash behind the hero, sized to the headline block. */
+.hero-glow::before {
+  content: '';
+  position: absolute;
+  inset: -10% -20% auto -20%;
+  height: 620px;
+  pointer-events: none;
+  z-index: -1;
+  background: radial-gradient(
+    50% 46% at 50% 26%,
+    color-mix(in oklch, var(--brand) 14%, transparent),
+    transparent 70%
+  );
+  filter: blur(46px);
+}
+
+.shot {
+  transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.shot {
+  box-shadow: 0 -2px 80px -30px color-mix(in oklch, var(--brand) 60%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .turn {
+    animation: none;
+  }
+  .shot,
+  .shot:hover {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* One word per headline is set in the display serif. It is a deliberate
+   contrast against Geist's grotesque, not a second body face -- so it only
+   ever appears at display sizes, italic, and never in running text. */
+.serif {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+}
+
+/* Providers scroll on their own. The track holds the list twice, so shifting
+   it exactly half its width loops without a seam; the mask fades both edges
+   into the page so the band has no visible boundary. */
+@keyframes helm-marquee {
+  to { transform: translateX(-50%); }
+}
+
+.marquee {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent);
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: helm-marquee 42s linear infinite;
+}
+
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track { animation: none; }
+  .marquee {
+    overflow-x: auto;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
+/* The bar has no edge of its own. A masked pseudo-element carries the blur and
+   a fade to transparent, so the header dissolves into the page instead of
+   sitting on it behind a rule. */
+.header-blend::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklch, var(--background) 88%, transparent),
+    color-mix(in oklch, var(--background) 42%, transparent) 62%,
+    transparent
+  );
+  -webkit-mask-image: linear-gradient(to bottom, #000 46%, transparent);
+  mask-image: linear-gradient(to bottom, #000 46%, transparent);
+  opacity: 0;
+  transition: opacity 320ms ease;
+}
+
+.header-blend[data-scrolled='true']::before {
+  opacity: 1;
 }

@@ -1,5 +1,5 @@
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
-import { WakuIcon } from '@/components/waku-icon'
+import { HelmIcon } from '@/components/helm-icon'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
@@ -31,7 +31,7 @@ function DialogContent({
             className="absolute right-3 top-3 grid size-8 place-items-center rounded-md text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
             type="button"
           >
-            <WakuIcon name="x" />
+            <HelmIcon name="x" />
           </DialogPrimitive.Close>
         </DialogPrimitive.Popup>
       </DialogPrimitive.Viewport>

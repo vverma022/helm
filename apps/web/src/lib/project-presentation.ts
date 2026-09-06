@@ -1,4 +1,4 @@
-import type { Project } from '@waku/client'
+import type { Project } from '@helm/client'
 
 export const PROJECTLESS_NAME = 'No project'
 

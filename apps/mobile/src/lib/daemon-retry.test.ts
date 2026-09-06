@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { WakuConnectionError } from "@waku/client";
+import { HelmConnectionError } from "@helm/client";
 
 import {
   RECONNECT_BASE_DELAY_MS,
@@ -37,26 +37,26 @@ describe("reconnectDelayMs", () => {
 describe("describeConnectionFailure", () => {
   test("keeps trying through network faults", () => {
     const refused = describeConnectionFailure(
-      new WakuConnectionError(
+      new HelmConnectionError(
         "unreachable",
         "The operation couldn’t be completed. Connection refused",
       ),
       "fallback",
     );
     expect(refused).toEqual({ message: "Connection refused", retryable: true });
-    expect(describeConnectionFailure(new WakuConnectionError("timeout", "x"), "f").retryable).toBe(true);
-    expect(describeConnectionFailure(new WakuConnectionError("closed", "x"), "f").retryable).toBe(true);
+    expect(describeConnectionFailure(new HelmConnectionError("timeout", "x"), "f").retryable).toBe(true);
+    expect(describeConnectionFailure(new HelmConnectionError("closed", "x"), "f").retryable).toBe(true);
   });
 
   test("stops for failures only the user can fix", () => {
     const rejected = describeConnectionFailure(
-      new WakuConnectionError("rejected", "daemon rejected connection: authentication failed"),
+      new HelmConnectionError("rejected", "daemon rejected connection: authentication failed"),
       "fallback",
     );
     expect(rejected.retryable).toBe(false);
     expect(rejected.message).toContain("rejected this token");
-    expect(describeConnectionFailure(new WakuConnectionError("protocol", "x"), "f").retryable).toBe(false);
-    expect(describeConnectionFailure(new WakuConnectionError("handshake", "x"), "f").retryable).toBe(false);
+    expect(describeConnectionFailure(new HelmConnectionError("protocol", "x"), "f").retryable).toBe(false);
+    expect(describeConnectionFailure(new HelmConnectionError("handshake", "x"), "f").retryable).toBe(false);
     expect(describeConnectionFailure(new Error("keychain locked"), "fallback")).toEqual({
       message: "keychain locked",
       retryable: false,

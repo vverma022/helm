@@ -1,4 +1,4 @@
-import type { AgentSession } from '@waku/client';
+import type { AgentSession } from '@helm/client';
 import {
   memo,
   useCallback,

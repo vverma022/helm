@@ -4,7 +4,7 @@ import type {
   PendingPermission,
   PendingUserInput,
   UserInputAnswer,
-} from '@waku/client';
+} from '@helm/client';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
@@ -238,7 +238,7 @@ export function MobileComposer({
     const operation = attachmentImportTail.current.catch(() => {}).then(async () => {
       const client = daemon.client;
       if (!client || daemon.phase !== 'connected') {
-        throw new Error('Waku daemon is disconnected');
+        throw new Error('Helm daemon is disconnected');
       }
       for (const file of files) {
         const imported = await importLocalAttachment(client, file);

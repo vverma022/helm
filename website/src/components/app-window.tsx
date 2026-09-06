@@ -41,7 +41,7 @@ function SessionRow({
   )
 }
 
-// A stylized, hand-drawn impression of the Waku window — always graphite,
+// A stylized, hand-drawn impression of the Helm window — always graphite,
 // independent of the page theme, because that's what the app looks like.
 export function AppWindow() {
   return (
@@ -54,7 +54,7 @@ export function AppWindow() {
           <span className="size-[11px] rounded-full bg-[#28c840] shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.25)]" />
         </div>
         <span className="absolute left-1/2 hidden max-w-[55%] -translate-x-1/2 truncate text-[11px] text-zinc-500 sm:block">
-          waku — fix dropped frames in the transcript list
+          helm — fix dropped frames in the transcript list
         </span>
         <span className="ml-auto hidden items-center gap-1.5 font-mono text-[9.5px] text-zinc-500 sm:flex">
           <span
@@ -77,7 +77,7 @@ export function AppWindow() {
           <div className="flex items-center gap-1.5 px-2 py-[5px] text-zinc-300">
             <ChevronDown className="size-3 text-zinc-600" />
             <Folder className="size-3 text-zinc-500" />
-            <span>waku</span>
+            <span>helm</span>
           </div>
           <div className="flex flex-col gap-px pl-4">
             <SessionRow title="fix dropped frames" active running />
@@ -142,7 +142,7 @@ export function AppWindow() {
                   Bash
                 </span>
                 <span className="truncate font-mono text-[10.5px] text-zinc-500">
-                  cargo test -p waku
+                  cargo test -p helm
                 </span>
                 <CircleCheck className="ml-auto size-3 shrink-0 text-emerald-400/90" />
               </div>

@@ -1,5 +1,5 @@
 target
-.waku-cache
+.helm-cache
 .DS_Store
 *.log
 .env
@@ -9,3 +9,6 @@ node_modules
 temp/
 
 .DS_Store
+
+# Personal development blueprint, not part of the repo.
+INTENT.md

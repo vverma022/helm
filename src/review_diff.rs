@@ -1,4 +1,4 @@
-//! Immutable, render-ready Git diffs for Waku's Review surface.
+//! Immutable, render-ready Git diffs for Helm's Review surface.
 //!
 //! The daemon captures Git output. This desktop module only parses and expands
 //! that returned data off the UI thread; a frame only indexes stored rows.
@@ -329,22 +329,22 @@ pub fn from_file_changes(changes: &[crate::model::ActivityFileChange]) -> Snapsh
     parse(Source::default(), &numstat, &patch, false)
 }
 
-pub fn wire_source(source: Source) -> waku_client::workspace::ReviewDiffSource {
+pub fn wire_source(source: Source) -> helm_client::workspace::ReviewDiffSource {
     match source {
         Source::LastTurn {
             session_id,
             turn_id,
             turn_count,
-        } => waku_client::workspace::ReviewDiffSource::LastTurn {
+        } => helm_client::workspace::ReviewDiffSource::LastTurn {
             session_id,
             turn_id,
             turn_count,
         },
-        Source::Uncommitted => waku_client::workspace::ReviewDiffSource::Uncommitted,
-        Source::Unstaged => waku_client::workspace::ReviewDiffSource::Unstaged,
-        Source::Staged => waku_client::workspace::ReviewDiffSource::Staged,
-        Source::Committed => waku_client::workspace::ReviewDiffSource::Committed,
-        Source::Branch => waku_client::workspace::ReviewDiffSource::Branch,
+        Source::Uncommitted => helm_client::workspace::ReviewDiffSource::Uncommitted,
+        Source::Unstaged => helm_client::workspace::ReviewDiffSource::Unstaged,
+        Source::Staged => helm_client::workspace::ReviewDiffSource::Staged,
+        Source::Committed => helm_client::workspace::ReviewDiffSource::Committed,
+        Source::Branch => helm_client::workspace::ReviewDiffSource::Branch,
     }
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { PROTOCOL_VERSION, WakuClient, type WebSocketLike } from "@waku/client";
+import { PROTOCOL_VERSION, HelmClient, type WebSocketLike } from "@helm/client";
 
 import { DaemonLink, type DaemonLinkOptions } from "./daemon-link";
 
@@ -100,7 +100,7 @@ function fixture(options: Partial<DaemonLinkOptions> = {}) {
   const clock = new FakeClock();
   const sockets: FakeSocket[] = [];
   let nextId = 0;
-  const client = new WakuClient({
+  const client = new HelmClient({
     address: "127.0.0.1:4312",
     token: "secret",
     randomUUID: () => `00000000-0000-4000-8000-${String(++nextId).padStart(12, "0")}`,

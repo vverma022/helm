@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { AgentSession, MessageAttachment, Project, SequencedEvent } from '@waku/client';
+import type { AgentSession, MessageAttachment, Project, SequencedEvent } from '@helm/client';
 
 import {
   applySessionOptions,
@@ -59,9 +59,9 @@ describe('mobile runtime projection', () => {
   });
 
   test('uses a worktree path and rejects replayed runtime events', () => {
-    const project: Project = { id: 'p', name: 'Waku', path: '/waku', created_at: 1 };
+    const project: Project = { id: 'p', name: 'Helm', path: '/helm', created_at: 1 };
     const current = session({
-      workspace: { kind: 'worktree', path: '/waku-worktree', branch: 'mobile' },
+      workspace: { kind: 'worktree', path: '/helm-worktree', branch: 'mobile' },
       runtime_event_cursor: { runtime_id: 'runtime', epoch: 'epoch', sequence: 4 },
     });
     const event = {
@@ -71,7 +71,7 @@ describe('mobile runtime projection', () => {
       sequence: 4,
       event: { kind: 'textDelta', payload: 'duplicate' },
     } satisfies SequencedEvent;
-    expect(sessionCwd(current, project)).toBe('/waku-worktree');
+    expect(sessionCwd(current, project)).toBe('/helm-worktree');
     expect(runtimeEventAlreadyApplied(current, event)).toBe(true);
   });
 
@@ -254,5 +254,5 @@ const attachment: MessageAttachment = {
   name: 'file.png',
   is_dir: false,
   is_image: true,
-  blob_reference: 'waku-attachment:file',
+  blob_reference: 'helm-attachment:file',
 };

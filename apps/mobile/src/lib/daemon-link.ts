@@ -1,4 +1,4 @@
-import { WakuClient, WakuRpcError, type WakuConnectionState } from '@waku/client';
+import { HelmClient, HelmRpcError, type HelmConnectionState } from '@helm/client';
 
 import { describeConnectionFailure, describeDisconnect, reconnectDelayMs } from './daemon-retry';
 
@@ -33,7 +33,7 @@ export interface DaemonLinkSnapshot {
 type TimerHandle = unknown;
 
 export interface DaemonLinkOptions {
-  client: WakuClient;
+  client: HelmClient;
   /** Whether the app is in the foreground. Retries and heartbeats only run there. */
   active?: boolean;
   now?: () => number;
@@ -65,7 +65,7 @@ export const DEFAULT_FRESHNESS_MS = 5_000;
  * attempts, so a reconnect resumes every followed runtime where it left off.
  */
 export class DaemonLink {
-  readonly client: WakuClient;
+  readonly client: HelmClient;
 
   private snapshot: DaemonLinkSnapshot = {
     phase: 'connecting',
@@ -177,7 +177,7 @@ export class DaemonLink {
         return true;
       } catch (cause) {
         // An error reply still proves the daemon is there.
-        if (cause instanceof WakuRpcError) return true;
+        if (cause instanceof HelmRpcError) return true;
         if (this.closed || this.snapshot.phase !== 'connected') return false;
         this.live = false;
         this.client.disconnect();
@@ -272,7 +272,7 @@ export class DaemonLink {
     this.scheduleRetry();
   }
 
-  private onClientState(state: WakuConnectionState): void {
+  private onClientState(state: HelmConnectionState): void {
     if (this.closed) return;
     if (state === 'connected') {
       this.live = true;

@@ -9,10 +9,10 @@ import type {
   ReviewDiffData,
   ReviewDiffSource,
   ResponsePayload,
-  WakuClient,
+  HelmClient,
   WorkingTreeEntry,
   WorkspaceResult,
-} from '@waku/client';
+} from '@helm/client';
 
 export type TaskState = Extract<ResponsePayload, { type: 'taskState' }>;
 export type DaemonDirectory = Extract<WorkspaceResult, { type: 'directory' }>;
@@ -67,12 +67,12 @@ export const daemonKeys = {
   ] as const,
 };
 
-export async function loadTaskState(client: WakuClient): Promise<TaskState> {
+export async function loadTaskState(client: HelmClient): Promise<TaskState> {
   return expectResponse(await client.request({ type: 'loadTaskState' }), 'taskState');
 }
 
 export async function hydrateSession(
-  client: WakuClient,
+  client: HelmClient,
   sessionId: string,
 ): Promise<AgentSession | null> {
   const response = expectResponse(
@@ -83,7 +83,7 @@ export async function hydrateSession(
 }
 
 export async function attachDaemonSession(
-  client: WakuClient,
+  client: HelmClient,
   sessionId: string,
 ): Promise<{ runtimeId: string; supportsSteer: boolean } | null> {
   const response = expectResponse(
@@ -95,7 +95,7 @@ export async function attachDaemonSession(
     : null;
 }
 
-export async function loadDaemonSettings(client: WakuClient): Promise<DaemonSettings> {
+export async function loadDaemonSettings(client: HelmClient): Promise<DaemonSettings> {
   const response = expectResponse(await client.request({ type: 'getSettings' }), 'settings');
   return {
     ...response.settings,
@@ -104,7 +104,7 @@ export async function loadDaemonSettings(client: WakuClient): Promise<DaemonSett
 }
 
 export async function probeProvider(
-  client: WakuClient,
+  client: HelmClient,
   provider: ProviderKind,
   settings: DaemonSettings,
   options: { discoverModels?: boolean; probeVersion?: boolean } = {},
@@ -123,7 +123,7 @@ export async function probeProvider(
 }
 
 export async function browseDaemonDirectory(
-  client: WakuClient,
+  client: HelmClient,
   path: string | null,
 ): Promise<DaemonDirectory> {
   const response = expectResponse(
@@ -151,7 +151,7 @@ export function createProject(
 }
 
 export async function persistProject(
-  client: WakuClient,
+  client: HelmClient,
   candidate: Project,
 ): Promise<{ project: Project; taskState: TaskState }> {
   const current = await loadTaskState(client);
@@ -170,7 +170,7 @@ export async function persistProject(
   return { project: candidate, taskState: { ...current, projects } };
 }
 
-export async function createProjectlessWorkspace(client: WakuClient): Promise<string> {
+export async function createProjectlessWorkspace(client: HelmClient): Promise<string> {
   const response = expectResponse(
     await client.request({
       type: 'workspace',
@@ -185,7 +185,7 @@ export async function createProjectlessWorkspace(client: WakuClient): Promise<st
 }
 
 export async function materializeWorktree(
-  client: WakuClient,
+  client: HelmClient,
   session: AgentSession,
   projectPath: string,
   prompt: string,
@@ -219,7 +219,7 @@ export async function materializeWorktree(
 }
 
 export async function loadComposerDrafts(
-  client: WakuClient,
+  client: HelmClient,
 ): Promise<Extract<ResponsePayload, { type: 'composerDrafts' }>['drafts']> {
   const response = expectResponse(
     await client.request({ type: 'loadComposerDrafts' }),
@@ -229,7 +229,7 @@ export async function loadComposerDrafts(
 }
 
 export async function applyComposerDraftChanges(
-  client: WakuClient,
+  client: HelmClient,
   changes: ComposerDraftChange[],
 ): Promise<void> {
   expectResponse(
@@ -239,7 +239,7 @@ export async function applyComposerDraftChanges(
 }
 
 export async function inspectBranches(
-  client: WakuClient,
+  client: HelmClient,
   cwd: string,
 ): Promise<BranchSnapshot | null> {
   const response = expectResponse(
@@ -253,7 +253,7 @@ export async function inspectBranches(
 }
 
 export async function listWorkspaceTree(
-  client: WakuClient,
+  client: HelmClient,
   root: string,
   expandedPaths: string[],
 ): Promise<WorkingTreeEntry[]> {
@@ -271,7 +271,7 @@ export async function listWorkspaceTree(
 }
 
 export async function readWorkspaceTextFile(
-  client: WakuClient,
+  client: HelmClient,
   root: string,
   relativePath: string,
 ): Promise<string> {
@@ -289,7 +289,7 @@ export async function readWorkspaceTextFile(
 }
 
 export async function collectWorkspaceDiff(
-  client: WakuClient,
+  client: HelmClient,
   cwd: string,
   source: ReviewDiffSource = 'uncommitted',
 ): Promise<ReviewDiffData> {
@@ -307,14 +307,14 @@ export async function collectWorkspaceDiff(
 }
 
 export async function removeDaemonSession(
-  client: WakuClient,
+  client: HelmClient,
   sessionId: string,
 ): Promise<void> {
   expectResponse(await client.request({ type: 'removeSession' }, sessionId), 'ack');
 }
 
 export async function persistSession(
-  client: WakuClient,
+  client: HelmClient,
   session: AgentSession,
 ): Promise<AgentSession> {
   const response = expectResponse(

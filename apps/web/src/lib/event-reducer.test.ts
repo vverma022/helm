@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { AgentSession, SequencedEvent } from '@waku/client'
+import type { AgentSession, SequencedEvent } from '@helm/client'
 import { reduceRuntimeEvent } from './event-reducer'
 
 const clock = {

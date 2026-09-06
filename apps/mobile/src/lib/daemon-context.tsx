@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { WakuClient, type WebSocketLike } from "@waku/client";
+import { HelmClient, type WebSocketLike } from "@helm/client";
 import * as Crypto from "expo-crypto";
 import {
   createContext,
@@ -62,7 +62,7 @@ interface ConnectionStatus {
 interface DaemonContextValue extends ConnectionStatus {
   profiles: DaemonProfile[];
   activeProfile: DaemonProfile | null;
-  client: WakuClient | null;
+  client: HelmClient | null;
   saveProfile: (
     input: DaemonProfileInput,
     id?: string,
@@ -100,7 +100,7 @@ function createNativeDaemonSocket(url: string): WebSocketLike {
     ): WebSocketLike;
   };
   return new NativeWebSocket(url, null, {
-    headers: { "X-Waku-Client": "native" },
+    headers: { "X-Helm-Client": "native" },
   });
 }
 
@@ -108,7 +108,7 @@ export function DaemonProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [profiles, setProfiles] = useState<DaemonProfile[]>([]);
   const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
-  const [client, setClient] = useState<WakuClient | null>(null);
+  const [client, setClient] = useState<HelmClient | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>({
     ...IDLE,
     phase: "booting",
@@ -213,7 +213,7 @@ export function DaemonProvider({ children }: { children: ReactNode }) {
         return false;
       }
 
-      const next = new WakuClient({
+      const next = new HelmClient({
         address: profile.address,
         token,
         randomUUID: Crypto.randomUUID,

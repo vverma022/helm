@@ -12,9 +12,9 @@ import { DaemonProvider } from '@/lib/daemon-context'
 import { RuntimeProvider } from '@/lib/runtime-context'
 import appCss from '@/styles.css?url'
 
-const TITLE = 'Waku Web'
+const TITLE = 'Helm Web'
 const DESCRIPTION =
-  'Connect securely to a Waku daemon and continue your coding-agent tasks from the browser.'
+  'Connect securely to a Helm daemon and continue your coding-agent tasks from the browser.'
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
@@ -43,7 +43,7 @@ export const Route = createRootRouteWithContext<{
     links: [{ rel: 'stylesheet', href: appCss }],
     scripts: [
       {
-        children: `try{var d=document.documentElement,p=localStorage.getItem('waku.theme'),s=matchMedia('(prefers-color-scheme: dark)').matches,x=p==='dark'||p!=='light'&&s,l=localStorage.getItem('waku.language'),n=(navigator.languages&&navigator.languages[0]||navigator.language||'en').replaceAll('_','-').toLowerCase(),r=l==='zh-CN'||l==='ja'||l==='en'?l:n==='zh-cn'||n==='zh-sg'||n.startsWith('zh-hans')?'zh-CN':n==='ja'||n.startsWith('ja-')?'ja':'en';d.classList.toggle('dark',x);d.classList.toggle('light',!x);d.lang=r}catch(e){}`,
+        children: `try{var d=document.documentElement,p=localStorage.getItem('helm.theme'),s=matchMedia('(prefers-color-scheme: dark)').matches,x=p==='dark'||p!=='light'&&s,l=localStorage.getItem('helm.language'),n=(navigator.languages&&navigator.languages[0]||navigator.language||'en').replaceAll('_','-').toLowerCase(),r=l==='zh-CN'||l==='ja'||l==='en'?l:n==='zh-cn'||n==='zh-sg'||n.startsWith('zh-hans')?'zh-CN':n==='ja'||n.startsWith('ja-')?'ja':'en';d.classList.toggle('dark',x);d.classList.toggle('light',!x);d.lang=r}catch(e){}`,
       },
     ],
   }),

@@ -1,4 +1,4 @@
-//! Ctrl-Tab switching across Waku tasks.
+//! Ctrl-Tab switching across Helm tasks.
 //!
 //! The task order is snapshotted when Control-Tab opens the overlay. Repeated
 //! presses move only the highlight; releasing Control commits once, so a
@@ -200,7 +200,7 @@ fn task_switcher_status_icon(status: SessionStatus) -> Option<&'static str> {
     }
 }
 
-impl Waku {
+impl Helm {
     pub(super) fn switch_task_forward_action(
         &mut self,
         _: &SwitchTaskForward,

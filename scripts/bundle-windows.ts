@@ -2,7 +2,7 @@
 //
 // Build and package the Windows release: a portable zip and the Inno Setup
 // installer the in-app updater re-runs silently. Mirrors bundle-linux.sh for
-// the archive half and resources/windows/waku.iss for the installer half.
+// the archive half and resources/windows/helm.iss for the installer half.
 //
 // Usage:
 //   bun scripts/bundle-windows.ts
@@ -17,7 +17,7 @@ import { copyFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-const packageName = "waku";
+const packageName = "helm";
 const projectRoot = resolve(import.meta.dir, "..");
 
 /** The updater picks its feed by Rust arch name, so the installer carries
@@ -116,22 +116,22 @@ if (!targetTriple || !architecture) {
   throw new Error(`Unsupported Windows target ${targetTriple ?? "(unknown)"}`);
 }
 
-const packageDirectoryName = `waku-${version}-${targetTriple}`;
+const packageDirectoryName = `helm-${version}-${targetTriple}`;
 const archive = join(releaseDirectory, `${packageDirectoryName}.zip`);
 const installer = join(
   releaseDirectory,
-  `Waku-${version}-${architecture}-Setup.exe`,
+  `Helm-${version}-${architecture}-Setup.exe`,
 );
 
-await $`cargo build --locked --release --package waku --bin waku --package waku-daemon --bin waku-daemon`;
+await $`cargo build --locked --release --package helm --bin helm --package helm-daemon --bin helm-daemon`;
 
-const staging = await mkdtemp(join(tmpdir(), "waku-bundle-"));
+const staging = await mkdtemp(join(tmpdir(), "helm-bundle-"));
 try {
   // Both executables stay side by side: the app resolves the daemon next to
   // itself, so the layout is what makes an extracted zip runnable in place.
   const packageDirectory = join(staging, packageDirectoryName);
   await mkdir(packageDirectory, { recursive: true });
-  for (const file of ["waku.exe", "waku-daemon.exe"]) {
+  for (const file of ["helm.exe", "helm-daemon.exe"]) {
     await copyFile(join(releaseDirectory, file), join(packageDirectory, file));
   }
   await copyFile(join(projectRoot, "LICENSE"), join(packageDirectory, "LICENSE"));
@@ -148,8 +148,8 @@ try {
     await writeFile(certificate, Buffer.from(certificateData, "base64"));
     signtool = findSigntool();
     await sign(signtool, certificate, certificatePassword, [
-      join(packageDirectory, "waku.exe"),
-      join(packageDirectory, "waku-daemon.exe"),
+      join(packageDirectory, "helm.exe"),
+      join(packageDirectory, "helm-daemon.exe"),
     ]);
   } else {
     console.log("No WINDOWS_CERTIFICATE set; packaging unsigned binaries.");
@@ -166,7 +166,7 @@ try {
   // The installer is what the in-app updater downloads and re-runs, so it
   // ships from the same signed staging directory as the zip.
   await rm(installer, { force: true });
-  await $`${findInnoSetupCompiler()} ${`/DAppVersion=${version}`} ${`/DArch=${architecture}`} ${`/DStageDir=${packageDirectory}`} ${`/DOutputDir=${releaseDirectory}`} ${join(projectRoot, "resources", "windows", "waku.iss")}`;
+  await $`${findInnoSetupCompiler()} ${`/DAppVersion=${version}`} ${`/DArch=${architecture}`} ${`/DStageDir=${packageDirectory}`} ${`/DOutputDir=${releaseDirectory}`} ${join(projectRoot, "resources", "windows", "helm.iss")}`;
   if (!existsSync(installer)) {
     throw new Error(`ISCC did not produce ${installer}`);
   }

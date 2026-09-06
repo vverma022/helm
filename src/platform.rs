@@ -74,7 +74,7 @@ pub fn init_reduce_motion(cx: &mut gpui::App) {
 
 #[cfg(target_os = "linux")]
 pub fn init_reduce_motion(cx: &mut gpui::App) {
-    if let Ok(value) = std::env::var("WAKU_REDUCE_MOTION")
+    if let Ok(value) = std::env::var("HELM_REDUCE_MOTION")
         && let Some(enabled) = parse_boolean_setting(&value)
     {
         cx.set_reduce_motion(enabled);
@@ -142,7 +142,7 @@ fn parse_boolean_setting(value: &str) -> Option<bool> {
 }
 
 /// Deliver an audible macOS notification. GPUI owns the notification-center
-/// delegate (and therefore click responses); Waku only supplies content here
+/// delegate (and therefore click responses); Helm only supplies content here
 /// because GPUI's generic payload does not currently expose a sound field.
 #[cfg(target_os = "macos")]
 pub fn show_task_notification(tag: &str, title: &str, body: &str, _: &gpui::App) {
@@ -388,7 +388,7 @@ pub const fn primary_shortcut<'a>(macos: &'a str, other: &'a str) -> &'a str {
     }
 }
 
-/// Keep Waku's single main window alive when the user closes it. This preserves
+/// Keep Helm's single main window alive when the user closes it. This preserves
 /// the current session and lets a Dock activation reveal the same GPUI window.
 #[cfg(target_os = "macos")]
 pub fn configure_main_window_close_behavior(window: &Window, cx: &gpui::App) {
@@ -519,8 +519,11 @@ pub fn configure_sidebar_material(window: &Window, dark: bool) {
             return;
         }
 
-        let channel = if dark { 0x18 } else { 0xF3 } as f64 / 255.0;
-        let tint = NSColor::colorWithSRGBRed_green_blue_alpha(channel, channel, channel, 0.92);
+        // The main panel is translucent too now, so the sidebar scrim has to
+        // stay light enough that the two read as one pane of glass rather than
+        // an opaque rail beside a blurred one.
+        let channel = if dark { 0x0E } else { 0xFA } as f64 / 255.0;
+        let tint = NSColor::colorWithSRGBRed_green_blue_alpha(channel, channel, channel, 0.62);
 
         SIDEBAR_TINT_VIEW.with_borrow_mut(|slot| {
             let needs_new_view = slot.as_ref().is_none_or(|tint_view| {

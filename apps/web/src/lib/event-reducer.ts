@@ -1,1 +1,1 @@
-export * from '@waku/client/event-reducer'
+export * from '@helm/client/event-reducer'

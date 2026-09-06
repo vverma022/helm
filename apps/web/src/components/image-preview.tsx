@@ -1,5 +1,5 @@
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
-import { WakuIcon } from '@/components/waku-icon'
+import { HelmIcon } from '@/components/helm-icon'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
@@ -41,7 +41,7 @@ export function PreviewableImage({
               title={t('attachments.close_preview')}
               type="button"
             >
-              <WakuIcon className="size-[13px]" name="x" />
+              <HelmIcon className="size-[13px]" name="x" />
             </DialogPrimitive.Close>
             <div className="flex min-h-0 min-w-0 items-center justify-center">
               <img

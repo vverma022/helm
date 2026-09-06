@@ -1,4 +1,4 @@
-import type { AgentSession, ReviewDiffSource } from "@waku/client";
+import type { AgentSession, ReviewDiffSource } from "@helm/client";
 
 export interface ReviewPatchFile {
   key: string;

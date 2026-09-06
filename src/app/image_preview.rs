@@ -8,7 +8,7 @@ use gpui::{KeyBinding, actions};
 
 use super::*;
 
-actions!(waku_image_preview, [DismissImagePreview]);
+actions!(helm_image_preview, [DismissImagePreview]);
 
 const IMAGE_PREVIEW_CONTEXT: &str = "ImagePreview";
 const IMAGE_PREVIEW_ANIMATION_DURATION: Duration = Duration::from_millis(140);
@@ -40,7 +40,7 @@ pub(super) fn attachment_menu_items(path: PathBuf, can_reveal: bool) -> Vec<Menu
     ]
 }
 
-impl Waku {
+impl Helm {
     /// Resolve one daemon-owned image for a visible row. Frames consult only
     /// in-memory state; the first miss starts a deduplicated background RPC and
     /// a later notification lets GPUI render the returned bytes from memory.
@@ -52,8 +52,8 @@ impl Waku {
         cx: &mut Context<Self>,
     ) -> Option<Arc<gpui::Image>> {
         let attachment_reference =
-            reference.starts_with(waku_protocol::attachments::ATTACHMENT_SCHEME);
-        if !waku_protocol::blob::is_reference(reference) && !attachment_reference {
+            reference.starts_with(helm_protocol::attachments::ATTACHMENT_SCHEME);
+        if !helm_protocol::blob::is_reference(reference) && !attachment_reference {
             return None;
         }
         if let Some(state) = self.remote_images.borrow().get(reference) {
@@ -80,11 +80,11 @@ impl Waku {
         let fetch_reference = cache_key.clone();
         let daemon_path = daemon_path.map(Path::to_path_buf);
         let daemon = self.daemon.clone();
-        cx.spawn(async move |waku, cx| {
+        cx.spawn(async move |helm, cx| {
             let image = cx
                 .background_executor()
                 .spawn(async move {
-                    waku_client::persistence::read_remote_reference(
+                    helm_client::persistence::read_remote_reference(
                         &fetch_reference,
                         daemon_path.as_deref(),
                         &daemon,
@@ -92,8 +92,8 @@ impl Waku {
                     .map(|bytes| Arc::new(gpui::Image::from_bytes(format, bytes)))
                 })
                 .await;
-            let _ = waku.update(cx, |waku, cx| {
-                waku.remote_images.borrow_mut().insert(
+            let _ = helm.update(cx, |helm, cx| {
+                helm.remote_images.borrow_mut().insert(
                     cache_key,
                     image.map_or(RemoteImageState::Unavailable, RemoteImageState::Ready),
                 );

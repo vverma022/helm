@@ -6,27 +6,27 @@ describe('normalizeDaemonAddress', () => {
     expect(normalizeDaemonAddress('host.example:34123')).toBe(
       'ws://host.example:34123',
     )
-    expect(normalizeDaemonAddress('https://waku.example/v1?token=nope')).toBe(
-      'wss://waku.example',
+    expect(normalizeDaemonAddress('https://helm.example/v1?token=nope')).toBe(
+      'wss://helm.example',
     )
-    expect(normalizeDaemonAddress('HTTP://WAKU.EXAMPLE/v1')).toBe(
-      'ws://waku.example',
+    expect(normalizeDaemonAddress('HTTP://HELM.EXAMPLE/v1')).toBe(
+      'ws://helm.example',
     )
   })
 
   test('rejects unsupported schemes and credentials', () => {
-    expect(() => normalizeDaemonAddress('ftp://waku.example')).toThrow()
-    expect(() => normalizeDaemonAddress('ws://token@waku.example')).toThrow()
+    expect(() => normalizeDaemonAddress('ftp://helm.example')).toThrow()
+    expect(() => normalizeDaemonAddress('ws://token@helm.example')).toThrow()
   })
 
   test('requires a token without putting it in the address', () => {
     expect(() =>
-      validateConnectionConfig({ address: 'waku.example', token: '  ' }),
+      validateConnectionConfig({ address: 'helm.example', token: '  ' }),
     ).toThrow('token')
     expect(
-      validateConnectionConfig({ address: 'waku.example', token: 'secret' }),
+      validateConnectionConfig({ address: 'helm.example', token: 'secret' }),
     ).toEqual({
-      address: 'ws://waku.example',
+      address: 'ws://helm.example',
       token: 'secret',
       remember: false,
     })

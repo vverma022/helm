@@ -1,25 +1,25 @@
 {
   "expo": {
-    "name": "Waku",
-    "slug": "waku-mobile",
+    "name": "Helm",
+    "slug": "helm-mobile",
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
-    "scheme": "waku",
+    "scheme": "helm",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/images/icon.png",
-      "bundleIdentifier": "sh.waku.mobile",
+      "bundleIdentifier": "io.github.vverma022.helm.mobile",
       "supportsTablet": true,
       "infoPlist": {
-        "NSLocalNetworkUsageDescription": "Waku connects directly to daemon hosts you add on your local or private network.",
+        "NSLocalNetworkUsageDescription": "Helm connects directly to daemon hosts you add on your local or private network.",
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
         }
       }
     },
     "android": {
-      "package": "sh.waku.mobile",
+      "package": "io.github.vverma022.helm.mobile",
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -57,8 +57,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Waku to choose photos to attach to tasks.",
-          "cameraPermission": "Allow Waku to take photos to attach to tasks.",
+          "photosPermission": "Allow Helm to choose photos to attach to tasks.",
+          "cameraPermission": "Allow Helm to take photos to attach to tasks.",
           "microphonePermission": false
         }
       ],

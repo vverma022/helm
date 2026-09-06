@@ -1,4 +1,4 @@
-import type { RuntimeMode } from '@waku/client';
+import type { RuntimeMode } from '@helm/client';
 
 export interface ComposerAccessMenuProps {
   mode: RuntimeMode;

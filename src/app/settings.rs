@@ -88,12 +88,12 @@ pub(super) fn visible_settings_pages(
         })
 }
 
-impl Waku {
+impl Helm {
     pub(super) fn render_settings(&self, window: &Window, cx: &mut Context<Self>) -> AnyElement {
         let theme = Theme::current(cx);
 
         div()
-            .key_context("Waku")
+            .key_context("Helm")
             .track_focus(&self.settings_focus)
             .on_action(|_: &CloseWindow, window, _| crate::platform::hide_window(window))
             .on_action(cx.listener(Self::new_session_action))
@@ -1101,7 +1101,7 @@ impl Waku {
     fn daemon_exposure_from_fields(
         &self,
         cx: &App,
-    ) -> Result<waku_client::DaemonExposureSettings, String> {
+    ) -> Result<helm_client::DaemonExposureSettings, String> {
         let port = self
             .daemon_port_input
             .read(cx)
@@ -1117,7 +1117,7 @@ impl Waku {
         settings.port = port;
         settings
             .with_allowed_origins_text(&origins)
-            .and_then(waku_client::DaemonExposureSettings::validate)
+            .and_then(helm_client::DaemonExposureSettings::validate)
             .map_err(|error| error.to_string())
     }
 
@@ -1172,14 +1172,14 @@ impl Waku {
                 return;
             }
         };
-        settings.token = waku_client::DaemonExposureSettings::new_token();
+        settings.token = helm_client::DaemonExposureSettings::new_token();
         self.daemon_token_revealed = false;
         self.apply_daemon_exposure(settings, cx);
     }
 
     fn apply_daemon_exposure(
         &mut self,
-        settings: waku_client::DaemonExposureSettings,
+        settings: helm_client::DaemonExposureSettings,
         cx: &mut Context<Self>,
     ) {
         if self.daemon_reconfigure_pending || settings == self.state.daemon_exposure {
@@ -1271,6 +1271,52 @@ impl Waku {
                     })
                     .collect()
             },
+        );
+
+        let selected_accent = self.state.accent;
+        let accent_swatches = div().flex().items_center().gap(px(8.0)).children(
+            AccentPreference::ALL
+                .into_iter()
+                .enumerate()
+                .map(|(index, preference)| {
+                    let selected = preference == selected_accent;
+                    let weak = cx.entity().downgrade();
+                    let label = preference.label();
+                    let tooltip_label = SharedString::from(label);
+                    div()
+                        .id(("accent-swatch", index))
+                        .tab_index(0)
+                        .w(px(24.0))
+                        .h(px(24.0))
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .flex_none()
+                        .rounded_full()
+                        .cursor_default()
+                        .border_2()
+                        .border_color(if selected {
+                            theme.text
+                        } else {
+                            gpui::transparent_black()
+                        })
+                        .focus_visible(|style| style.border_color(theme.accent))
+                        .tooltip(move |window, cx| {
+                            Tooltip::new(tooltip_label.clone()).build(window, cx)
+                        })
+                        .child(
+                            div()
+                                .w(px(14.0))
+                                .h(px(14.0))
+                                .rounded_full()
+                                .bg(rgb(preference.rgb(theme.is_dark))),
+                        )
+                        .on_click(move |_, window, cx| {
+                            let _ = weak.update(cx, |this, cx| {
+                                this.set_accent_preference(preference, window, cx);
+                            });
+                        })
+                }),
         );
 
         let selected_ui_font_size = self.state.ui_font_size;
@@ -1417,6 +1463,38 @@ impl Waku {
                                     .text_size(sp(13.5))
                                     .font_weight(FontWeight::MEDIUM)
                                     .text_color(theme.text)
+                                    .child(tr!("settings.accent")),
+                            )
+                            .child(
+                                div()
+                                    .mt(px(5.0))
+                                    .text_size(sp(12.5))
+                                    .line_height(sp(18.0))
+                                    .text_color(theme.text_secondary)
+                                    .child(tr!("settings.accent_description")),
+                            ),
+                    )
+                    .child(accent_swatches),
+            )
+            .child(div().mx(px(20.0)).h(px(1.0)).bg(theme.border))
+            .child(
+                div()
+                    .w_full()
+                    .min_h(px(60.0))
+                    .px(px(20.0))
+                    .py(px(12.0))
+                    .flex()
+                    .items_center()
+                    .gap(px(24.0))
+                    .child(
+                        div()
+                            .flex_1()
+                            .min_w_0()
+                            .child(
+                                div()
+                                    .text_size(sp(13.5))
+                                    .font_weight(FontWeight::MEDIUM)
+                                    .text_color(theme.text)
                                     .child(tr!("language.title")),
                             )
                             .child(
@@ -1498,7 +1576,7 @@ impl Waku {
     }
 
     fn set_ui_font_size(&mut self, size: f32, window: &mut Window, cx: &mut Context<Self>) {
-        let size = waku_client::persistence::sanitized_ui_font_size(size);
+        let size = helm_client::persistence::sanitized_ui_font_size(size);
         if self.state.ui_font_size == size {
             return;
         }
@@ -1512,7 +1590,7 @@ impl Waku {
     }
 
     fn set_code_font_size(&mut self, size: f32, cx: &mut Context<Self>) {
-        let size = waku_client::persistence::sanitized_code_font_size(size);
+        let size = helm_client::persistence::sanitized_code_font_size(size);
         if self.state.code_font_size == size {
             return;
         }
@@ -2238,14 +2316,14 @@ impl Waku {
         let event_wake = self.event_wake_tx.clone();
         let daemon = self.daemon.client();
         std::thread::Builder::new()
-            .name("waku-computer-permission-request".into())
+            .name("helm-computer-permission-request".into())
             .spawn(move || {
                 let result = match daemon.request(
                     Uuid::nil(),
                     Uuid::nil(),
-                    waku_client::Command::ProbeComputerPermissions { prompt },
+                    helm_client::Command::ProbeComputerPermissions { prompt },
                 ) {
-                    Ok(waku_client::ResponsePayload::ComputerPermissions { permissions }) => {
+                    Ok(helm_client::ResponsePayload::ComputerPermissions { permissions }) => {
                         Ok(permissions)
                     }
                     Ok(_) => Err("the daemon returned an invalid permission response".into()),
@@ -2356,7 +2434,22 @@ impl Waku {
             return;
         }
         self.state.theme = preference;
-        crate::theme::apply_theme_preference(preference, window, cx);
+        crate::theme::apply_theme_preference(preference, self.state.accent, window, cx);
+        self.save();
+        cx.notify();
+    }
+
+    fn set_accent_preference(
+        &mut self,
+        preference: AccentPreference,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.state.accent == preference {
+            return;
+        }
+        self.state.accent = preference;
+        crate::theme::apply_theme_preference(self.state.theme, preference, window, cx);
         self.save();
         cx.notify();
     }
@@ -2465,7 +2558,7 @@ fn permission_status_row(
     granted: bool,
     id: &'static str,
     theme: Theme,
-    cx: &mut Context<Waku>,
+    cx: &mut Context<Helm>,
 ) -> Div {
     let status = if granted {
         div()

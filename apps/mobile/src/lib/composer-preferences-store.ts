@@ -1,10 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { RuntimeMode } from '@waku/client';
+import type { RuntimeMode } from '@helm/client';
 import {
   readComposerPreferences,
   writeComposerPreferences,
   type ComposerPreferences,
-} from '@waku/client/composer-preferences';
+} from '@helm/client/composer-preferences';
 
 /** Mobile-only additions to the shared composer preferences: the New Task
  * page also restores access mode, workspace choice, and project. */
@@ -14,7 +14,7 @@ export interface NewTaskExtras {
   projectId: string | null;
 }
 
-const EXTRAS_KEY = 'waku.mobile.new-task.v1';
+const EXTRAS_KEY = 'helm.mobile.new-task.v1';
 const DEFAULT_EXTRAS: NewTaskExtras = {
   runtimeMode: 'fullAccess',
   isolated: false,
@@ -26,8 +26,8 @@ let hydrated: Promise<void> | null = null;
 let hydratedDone = false;
 
 const PERSISTED_KEYS = [
-  'waku.composer-preferences.v1',
-  'waku.provider-probes.v1',
+  'helm.composer-preferences.v1',
+  'helm.provider-probes.v1',
   EXTRAS_KEY,
 ];
 

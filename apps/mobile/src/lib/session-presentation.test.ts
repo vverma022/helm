@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import type { AgentSession, AgentTurn, Project } from '@waku/client';
-import { activitiesForBlock } from '@waku/client/event-reducer';
+import type { AgentSession, AgentTurn, Project } from '@helm/client';
+import { activitiesForBlock } from '@helm/client/event-reducer';
 
 import { TranscriptMarkdownCache } from '../md/transcript-cache';
 import {
@@ -25,7 +25,7 @@ describe('mobile session presentation', () => {
 
   test('groups started sessions by the desktop calendar periods, newest first', () => {
     const now = new Date(2026, 7, 31, 12);
-    const projects: Project[] = [{ id: 'project', name: 'Waku', path: '/waku', created_at: 1 }];
+    const projects: Project[] = [{ id: 'project', name: 'Helm', path: '/helm', created_at: 1 }];
     const current = session({ id: 'new', last_reply_at: epoch(2026, 7, 31, 11) });
     const yesterday = session({ id: 'old', last_reply_at: epoch(2026, 7, 30, 20) });
     const earlier = session({ id: 'earlier', last_reply_at: epoch(2026, 7, 20, 20) });
@@ -176,7 +176,7 @@ describe('mobile session presentation', () => {
         completed_at: 70,
         checkpoint: {
           turn_count: 1,
-          git_ref: 'refs/waku/x',
+          git_ref: 'refs/helm/x',
           status: 'ready',
           files: [{ path: 'src/a.ts', additions: 3, deletions: 1 }],
           additions: 3,

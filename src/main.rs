@@ -7,5 +7,5 @@
 )]
 
 fn main() {
-    waku::run();
+    helm::run();
 }

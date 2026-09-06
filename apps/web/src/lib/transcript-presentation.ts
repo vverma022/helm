@@ -1,1 +1,1 @@
-export * from '@waku/client/transcript-presentation'
+export * from '@helm/client/transcript-presentation'

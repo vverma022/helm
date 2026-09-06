@@ -3,7 +3,7 @@ import type {
   DaemonSettings,
   Project,
   ProviderKind,
-} from '@waku/client'
+} from '@helm/client'
 import { useEffect, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { ControlMenu } from '@/components/control-menu'
@@ -11,7 +11,7 @@ import { SkillsSettings } from '@/components/skills-settings'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { UsageSettings } from '@/components/usage-settings'
-import { ProviderIcon, PROVIDERS, WakuIcon, type WakuIconName } from '@/components/waku-icon'
+import { ProviderIcon, PROVIDERS, HelmIcon, type HelmIconName } from '@/components/helm-icon'
 import {
   useDaemonSettings,
   useProviderProbes,
@@ -46,7 +46,7 @@ export const SETTINGS_PAGES: Array<{
   id: SettingsPageId
   label: string
   labelKey: string
-  icon: WakuIconName
+  icon: HelmIconName
   keywords: string
   keywordsKey: string
 }> = [
@@ -102,13 +102,13 @@ export function SettingsView({
             type="button"
             onClick={onBack}
           >
-            <WakuIcon className="size-[15px] text-[var(--text-tertiary)]" name="arrowLeft" />
+            <HelmIcon className="size-[15px] text-[var(--text-tertiary)]" name="arrowLeft" />
             {t('settings.back')}
           </button>
         </div>
         <div className="px-3 pt-2">
           <label className="flex h-8 items-center gap-2 rounded-lg border bg-[var(--inset)] px-2.5 focus-within:border-ring">
-            <WakuIcon className="size-[13px] text-[var(--text-tertiary)]" name="search" />
+            <HelmIcon className="size-[13px] text-[var(--text-tertiary)]" name="search" />
             <input
               aria-label={t('settings.search')}
               className="min-w-0 flex-1 bg-transparent text-[12px] outline-none placeholder:text-[var(--text-ghost)]"
@@ -137,7 +137,7 @@ export function SettingsView({
               type="button"
               onClick={() => onPageChange(candidate.id)}
             >
-              <WakuIcon className="size-[15px] text-[var(--text-tertiary)]" name={candidate.icon} />
+              <HelmIcon className="size-[15px] text-[var(--text-tertiary)]" name={candidate.icon} />
               {candidate.localizedLabel}
             </button>
           ))}
@@ -166,7 +166,7 @@ export function SettingsView({
 
 function GeneralSettings() {
   const { t } = useI18n()
-  const [analytics, setAnalytics] = useStoredBoolean('waku.analytics-enabled', true)
+  const [analytics, setAnalytics] = useStoredBoolean('helm.analytics-enabled', true)
   return (
     <div>
       <SettingsCard>
@@ -195,7 +195,7 @@ function AppearanceSettings() {
     const systemAppearance = window.matchMedia('(prefers-color-scheme: dark)')
     const apply = () => applyThemeChoice(document.documentElement, theme, systemAppearance.matches)
     apply()
-    window.localStorage.setItem('waku.theme', theme)
+    window.localStorage.setItem('helm.theme', theme)
     systemAppearance.addEventListener('change', apply)
     return () => systemAppearance.removeEventListener('change', apply)
   }, [theme])
@@ -309,7 +309,7 @@ function ProvidersSettings() {
               void queryClient.invalidateQueries({ queryKey: daemonKeys.providers(config.address) })
             }}
           >
-            <WakuIcon className={cn('size-[11px] text-[var(--text-tertiary)]', probes.isFetching && 'motion-safe:animate-spin')} name="rotateCw" />
+            <HelmIcon className={cn('size-[11px] text-[var(--text-tertiary)]', probes.isFetching && 'motion-safe:animate-spin')} name="rotateCw" />
             {probes.isFetching ? t('common.checking') : t('common.refresh')}
           </button>
           {!probes.isFetching && checkedAt > 0 && (
@@ -355,7 +355,7 @@ function ProvidersSettings() {
                   type="button"
                   onClick={() => toggleExpandedProvider(provider.id)}
                 >
-                  <WakuIcon className="size-2.5" name={open ? 'chevronDown' : 'chevronRight'} />
+                  <HelmIcon className="size-2.5" name={open ? 'chevronDown' : 'chevronRight'} />
                 </button>
                 {installed && (
                   <Toggle
@@ -570,12 +570,12 @@ function DetailRow({
           variant="outline"
           onClick={() => setRevealed((current) => !current)}
         >
-          <WakuIcon name={revealed ? 'eyeOff' : 'eye'} />
+          <HelmIcon name={revealed ? 'eyeOff' : 'eye'} />
         </Button>
       )}
       {copy && (
         <Button size="sm" variant="outline" onClick={() => void copyFeedback.copyText(value)}>
-          <WakuIcon name={copyFeedback.copied ? 'check' : 'copy'} />
+          <HelmIcon name={copyFeedback.copied ? 'check' : 'copy'} />
           {t(copyFeedback.copied ? 'common.copied' : 'common.copy')}
         </Button>
       )}

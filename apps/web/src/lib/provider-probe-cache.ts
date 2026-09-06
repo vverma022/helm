@@ -1,1 +1,1 @@
-export * from '@waku/client/provider-probe-cache'
+export * from '@helm/client/provider-probe-cache'

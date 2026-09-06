@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import type { WorkingTreeEntry } from '@waku/client'
+import type { WorkingTreeEntry } from '@helm/client'
 import { useEffect, useRef, useState, type KeyboardEvent, type RefObject } from 'react'
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { FileTypeIcon, WakuIcon } from '@/components/waku-icon'
+import { FileTypeIcon, HelmIcon } from '@/components/helm-icon'
 import { browseDaemonDirectory, daemonKeys } from '@/lib/daemon-api'
 import { useDaemon } from '@/lib/daemon-context'
 import { useI18n } from '@/lib/i18n'
@@ -248,14 +248,14 @@ export function DaemonFilePicker({
                 className="mx-1 flex min-w-0 flex-1 items-center gap-2 rounded-[7px] px-1.5 py-1"
                 title={resolvedPath || undefined}
               >
-                <WakuIcon className="size-[14px] text-[var(--text-tertiary)]" name="folder" />
+                <HelmIcon className="size-[14px] text-[var(--text-tertiary)]" name="folder" />
                 <span className="min-w-0 truncate text-[11.5px] text-[var(--text-secondary)]">
                   {resolvedPath || t('file_picker.loading_folder')}
                 </span>
               </div>
 
               <label className="flex h-7 w-36 shrink-0 items-center gap-1.5 rounded-[7px] bg-foreground/[0.055] px-2 focus-within:ring-1 focus-within:ring-ring">
-                <WakuIcon className="size-3 text-[var(--text-tertiary)]" name="search" />
+                <HelmIcon className="size-3 text-[var(--text-tertiary)]" name="search" />
                 <input
                   autoFocus
                   aria-label={t('file_picker.filter_folder')}
@@ -322,7 +322,7 @@ export function DaemonFilePicker({
                           }}
                         >
                           {entry.isDir ? (
-                            <WakuIcon
+                            <HelmIcon
                               className={cn(
                                 'size-[15px] text-[var(--text-tertiary)]',
                                 !selectable && 'text-[var(--text-ghost)]',
@@ -340,7 +340,7 @@ export function DaemonFilePicker({
                           )}
                           <span className="min-w-0 flex-1 truncate">{entry.name}</span>
                           {selected && (
-                            <WakuIcon className="size-3 text-[var(--text-tertiary)]" name="check" />
+                            <HelmIcon className="size-3 text-[var(--text-tertiary)]" name="check" />
                           )}
                         </button>
                       </div>
@@ -359,7 +359,7 @@ export function DaemonFilePicker({
             className="flex min-w-0 flex-1 items-center gap-2 text-[11px] text-[var(--text-tertiary)]"
             title={selectedTarget ?? undefined}
           >
-            <WakuIcon className="size-3.5 shrink-0" name={selectedEntry?.isDir === false ? 'file' : 'folder'} />
+            <HelmIcon className="size-3.5 shrink-0" name={selectedEntry?.isDir === false ? 'file' : 'folder'} />
             <span className="truncate">{selectedTarget ?? t('file_picker.none')}</span>
           </div>
           <Button disabled={Boolean(submittingPath)} size="sm" type="button" variant="ghost" onClick={onClose}>
@@ -402,7 +402,7 @@ function LocationButton({
       type="button"
       onClick={onClick}
     >
-      <WakuIcon className="size-[14px] text-[var(--text-tertiary)]" name="folder" />
+      <HelmIcon className="size-[14px] text-[var(--text-tertiary)]" name="folder" />
       <span className="truncate">{label}</span>
     </button>
   )
@@ -430,7 +430,7 @@ function ToolbarButton({
       type="button"
       onClick={onClick}
     >
-      <WakuIcon className={cn('size-3.5', spinning && 'motion-safe:animate-spin')} name={icon} />
+      <HelmIcon className={cn('size-3.5', spinning && 'motion-safe:animate-spin')} name={icon} />
     </button>
   )
 }
@@ -447,7 +447,7 @@ function ExplorerMessage({
   return (
     <div className="grid h-full min-h-48 place-items-center px-8 text-center">
       <div>
-        <WakuIcon className={cn('mx-auto size-8 text-[var(--text-ghost)]', danger && 'text-destructive')} name={icon} />
+        <HelmIcon className={cn('mx-auto size-8 text-[var(--text-ghost)]', danger && 'text-destructive')} name={icon} />
         <p className={cn('mt-3 text-[11.5px] text-[var(--text-tertiary)]', danger && 'text-destructive')}>
           {title}
         </p>

@@ -1,6 +1,6 @@
-import type { TranscriptBlock } from '@waku/client';
-import { activitiesForBlock } from '@waku/client/event-reducer';
-import { activityHeaderTitle } from '@waku/client/transcript-presentation';
+import type { TranscriptBlock } from '@helm/client';
+import { activitiesForBlock } from '@helm/client/event-reducer';
+import { activityHeaderTitle } from '@helm/client/transcript-presentation';
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 

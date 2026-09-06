@@ -1,5 +1,5 @@
 import { BottomSheetFlatList } from '@expo/ui/community/bottom-sheet';
-import type { ProviderKind, ProviderModel, RuntimeMode } from '@waku/client';
+import type { ProviderKind, ProviderModel, RuntimeMode } from '@helm/client';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useState } from 'react';
 import {

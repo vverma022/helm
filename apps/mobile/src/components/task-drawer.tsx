@@ -1,4 +1,4 @@
-import type { AgentSession } from '@waku/client';
+import type { AgentSession } from '@helm/client';
 import * as Haptics from 'expo-haptics';
 import { router, useGlobalSearchParams, usePathname } from 'expo-router';
 import {
