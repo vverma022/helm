@@ -16,6 +16,13 @@ the original feature bullet instead of adding separate entries for them.
 
 ## [unreleased]
 
+- Installing on macOS is guided now. The disk image explains the security
+  prompt Apple shows for apps it has not notarised, and a new page at
+  helm.vverma.in/install/mac walks through it with screenshots — so a first
+  launch is no longer one wrong button away from deleting Helm.
+- `curl -fsSL https://helm.vverma.in/install.sh | sh` now installs on macOS as
+  well as Linux. It verifies the download and skips the prompt entirely.
+
 ## [0.3.0]
 
 - See which tasks are finished: a completed task now carries a green check instead of nothing at all, and every status marker names itself on hover — including "Needs your input" for a task paused on a permission or a question
