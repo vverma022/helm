@@ -16,6 +16,8 @@ the original feature bullet instead of adding separate entries for them.
 
 ## [unreleased]
 
+## [0.3.1]
+
 - Installing on macOS is guided now. The disk image explains the security
   prompt Apple shows for apps it has not notarised, and a new page at
   helm.vverma.in/install/mac walks through it with screenshots — so a first
