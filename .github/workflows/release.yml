@@ -325,9 +325,11 @@ jobs:
       # than failing. That is not a lesser release for update purposes:
       # scripts/bundle.sh pins the ad-hoc designated requirement to the bundle
       # id, so one ad-hoc build satisfies the next one's requirement and
-      # Sparkle accepts the update. Notarization only governs the *first*
-      # launch — the user right-click → Opens once, and every version after
-      # that installs itself.
+      # Sparkle accepts the update. It does cost the *first* launch: since
+      # macOS 15 Gatekeeper refuses a quarantined un-notarized bundle outright
+      # and right-click → Open no longer overrides it, so the .dmg reports
+      # "Helm is damaged". website/public/install.sh is the way in until a
+      # Developer ID is configured here.
       - name: Decide how macOS can be signed
         id: signing
         env:
@@ -338,7 +340,7 @@ jobs:
             echo "Developer ID available; signing and notarizing."
           else
             echo "adhoc=true" >> "$GITHUB_OUTPUT"
-            echo "::warning::No APPLE_CERTIFICATE — building macOS ad-hoc. Updates work; first launch needs right-click → Open."
+            echo "::warning::No APPLE_CERTIFICATE — building macOS ad-hoc. Updates work, but the .dmg cannot be opened by hand on macOS 15+; users must install via website/public/install.sh."
           fi
 
       - name: Import Apple Developer Certificate

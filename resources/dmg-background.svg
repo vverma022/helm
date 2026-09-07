@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="660" height="512" viewBox="0 0 660 512">
+  <rect width="660" height="512" fill="#FAFAFA"/>
+
+  <text x="330" y="56" text-anchor="middle" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="17" font-weight="500" fill="#1F1F1F">Drag Helm into Applications</text>
+
+  <g stroke="#C6C6C6" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="290" y1="170" x2="366" y2="170"/>
+    <polyline points="356,161 366,170 356,179"/>
+  </g>
+
+  <g>
+    <rect x="44" y="288" width="572" height="164" rx="14" fill="#FFFFFF" stroke="#E6E6E6" stroke-width="1"/>
+    <circle cx="72" cy="321" r="4" fill="#D1373C"/>
+    <text x="88" y="326" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="600" fill="#1F1F1F">First launch needs one extra step</text>
+
+    <text x="72" y="360" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#4A4A4A">macOS will say Helm can’t be verified. Click <tspan font-weight="600" fill="#1F1F1F">Done</tspan> — <tspan font-weight="600" fill="#D1373C">not Move to Trash</tspan>.</text>
+    <text x="72" y="386" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12.5" fill="#4A4A4A">Then open <tspan font-weight="600" fill="#1F1F1F">System Settings › Privacy &amp; Security</tspan> and click <tspan font-weight="600" fill="#1F1F1F">Open Anyway</tspan>.</text>
+
+    <text x="72" y="422" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11.5" fill="#8A8A8A">Helm is signed but not yet notarised by Apple. You only do this once.</text>
+  </g>
+
+  <text x="330" y="482" text-anchor="middle" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11.5" fill="#D1373C">helm.vverma.in/install/mac</text>
+</svg>

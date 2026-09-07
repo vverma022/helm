@@ -1,25 +1,30 @@
 #!/usr/bin/env sh
 set -eu
 
-# Installs Helm for Linux into ~/.local — no root, no package manager.
-# Downloads the release tarball from https://github.com/vverma022/helm/releases/latest/download/, unpacks it as
+# Installs Helm — no root, no package manager.
+#
+# Linux: downloads the release tarball from
+# https://github.com/vverma022/helm/releases/latest/download/, unpacks it as
 # ~/.local/helm.app, links the binary onto PATH, and registers the desktop
 # entry. docs/linux.md documents the equivalent manual steps.
 #
-#   curl -fsSL https://raw.githubusercontent.com/vverma022/helm/main/website/public/install.sh | sh
+# macOS: downloads the .dmg, verifies the bundle, and installs it into
+# /Applications ready to launch.
+#
+#   curl -fsSL https://helm.vverma.in/install.sh | sh
 #
 # Environment:
 #   HELM_VERSION        install this version instead of the latest
-#   HELM_BUNDLE_PATH    install a local tarball instead of downloading
+#   HELM_BUNDLE_PATH    install a local tarball (Linux) or .dmg (macOS)
 #   HELM_RELEASES_URL   base URL to download from
 
 usage() {
     cat <<'USAGE'
-Install Helm for Linux into ~/.local.
+Install Helm — into ~/.local on Linux, /Applications on macOS.
 
 Usage:
-  curl -fsSL https://raw.githubusercontent.com/vverma022/helm/main/website/public/install.sh | sh
-  curl -fsSL https://raw.githubusercontent.com/vverma022/helm/main/website/public/install.sh | sh -s -- --uninstall
+  curl -fsSL https://helm.vverma.in/install.sh | sh
+  curl -fsSL https://helm.vverma.in/install.sh | sh -s -- --uninstall
 
 Options:
   --uninstall   Remove Helm, leaving ~/.helm (projects and settings) alone
@@ -31,10 +36,14 @@ main() {
     app_dir="$HOME/.local/helm.app"
     bin_link="$HOME/.local/bin/helm"
     desktop_file="$HOME/.local/share/applications/io.github.vverma022.helm.desktop"
+    bundle_identifier="io.github.vverma022.helm"
     releases="${HELM_RELEASES_URL:-https://github.com/vverma022/helm/releases/latest/download/}"
+    platform="$(uname -s)"
 
     case "${1:-}" in
-        --uninstall) uninstall; return ;;
+        --uninstall)
+            if [ "$platform" = "Darwin" ]; then uninstall_macos; else uninstall; fi
+            return ;;
         --help | -h) usage; return ;;
         "") ;;
         *)
@@ -44,15 +53,23 @@ main() {
             ;;
     esac
 
-    platform="$(uname -s)"
-    if [ "$platform" = "Darwin" ]; then
-        echo "Helm for macOS ships as a signed .dmg that updates itself." >&2
-        echo "Download it from https://github.com/vverma022/helm" >&2
-        exit 1
-    fi
-    if [ "$platform" != "Linux" ]; then
+    if [ "$platform" != "Linux" ] && [ "$platform" != "Darwin" ]; then
         echo "Unsupported platform: $platform" >&2
         exit 1
+    fi
+
+    if command -v curl >/dev/null 2>&1; then
+        fetch() { command curl -fsSL "$1"; }
+    elif command -v wget >/dev/null 2>&1; then
+        fetch() { wget -qO- "$1"; }
+    else
+        echo "Could not find 'curl' or 'wget' in your PATH." >&2
+        exit 1
+    fi
+
+    if [ "$platform" = "Darwin" ]; then
+        install_macos
+        return
     fi
 
     machine="$(uname -m)"
@@ -65,15 +82,6 @@ main() {
             exit 1
             ;;
     esac
-
-    if command -v curl >/dev/null 2>&1; then
-        fetch() { command curl -fsSL "$1"; }
-    elif command -v wget >/dev/null 2>&1; then
-        fetch() { wget -qO- "$1"; }
-    else
-        echo "Could not find 'curl' or 'wget' in your PATH." >&2
-        exit 1
-    fi
 
     temp="$(mktemp -d "${TMPDIR:-/tmp}/helm-XXXXXX")"
     staging="$app_dir.new"
@@ -161,6 +169,123 @@ main() {
     else
         echo "From a terminal: $bin_link"
     fi
+}
+
+# The macOS build is ad-hoc signed rather than notarized, and since macOS 15
+# Gatekeeper refuses a quarantined bundle outright — the right-click -> Open
+# escape hatch is gone, so a downloaded .dmg reports "Helm is damaged". This
+# does what a notarized install would have done: check the bundle really is
+# the one we published, put it in place, and drop the quarantine flag the
+# browser attached. Delete this path once the build is notarized.
+install_macos() {
+    if [ "$(uname -m)" != "arm64" ]; then
+        echo "Helm for macOS is Apple Silicon only (found $(uname -m))." >&2
+        echo "Build from source: https://github.com/vverma022/helm" >&2
+        exit 1
+    fi
+
+    # Replacing a bundle out from under a running copy leaves it half-broken in
+    # ways that surface much later, so refuse rather than repair.
+    if pgrep -x Helm >/dev/null 2>&1; then
+        echo "Helm is running. Quit it and run this again." >&2
+        exit 1
+    fi
+
+    if [ -w /Applications ]; then
+        dest="/Applications/Helm.app"
+    else
+        dest="$HOME/Applications/Helm.app"
+        mkdir -p "$(dirname "$dest")"
+    fi
+
+    temp="$(mktemp -d "${TMPDIR:-/tmp}/helm-XXXXXX")"
+    mount_point="$temp/mnt"
+    trap 'hdiutil detach "$mount_point" -quiet 2>/dev/null || true; rm -rf -- "$temp"' EXIT INT TERM
+
+    dmg="$temp/helm.dmg"
+    if [ -n "${HELM_BUNDLE_PATH:-}" ]; then
+        cp "$HELM_BUNDLE_PATH" "$dmg"
+    else
+        version="${HELM_VERSION:-}"
+        if [ -z "$version" ]; then
+            # Sparkle's feed is what every installed copy already resolves
+            # "latest" against, and generate_appcast puts the newest item
+            # first. Reusing it keeps one answer for what the current version
+            # is instead of publishing a second one.
+            if ! appcast="$(fetch "$releases/appcast.xml")"; then
+                echo "Could not reach $releases/appcast.xml." >&2
+                echo "Pass HELM_VERSION to install a specific version." >&2
+                exit 1
+            fi
+            version="$(printf '%s' "$appcast" |
+                sed -n 's|.*<sparkle:shortVersionString>\([^<]*\)</sparkle:shortVersionString>.*|\1|p' |
+                head -1)"
+        fi
+        if [ -z "$version" ]; then
+            echo "No Helm version published for macOS yet." >&2
+            exit 1
+        fi
+        echo "Downloading Helm $version"
+        if ! fetch "$releases/Helm-$version.dmg" >"$dmg"; then
+            echo "Download failed: $releases/Helm-$version.dmg" >&2
+            exit 1
+        fi
+    fi
+
+    mkdir -p "$mount_point"
+    if ! hdiutil attach "$dmg" -nobrowse -readonly -quiet -mountpoint "$mount_point"; then
+        echo "Downloaded file is not a readable disk image." >&2
+        exit 1
+    fi
+    if [ ! -d "$mount_point/Helm.app" ]; then
+        echo "Disk image does not contain Helm.app." >&2
+        exit 1
+    fi
+
+    # scripts/bundle.sh pins the ad-hoc designated requirement to the bundle
+    # id, so this rejects a tampered or substituted bundle. It is a weaker
+    # guarantee than notarization — it proves nothing about who built it — but
+    # it is the check that is available without a Developer ID.
+    if ! codesign --verify --strict \
+        -R "=identifier \"$bundle_identifier\"" \
+        "$mount_point/Helm.app" >/dev/null 2>&1; then
+        echo "The downloaded Helm.app failed its signature check; not installing." >&2
+        exit 1
+    fi
+
+    echo "Installing to $dest"
+    staging="$dest.new"
+    rm -rf "$staging"
+    if ! cp -R "$mount_point/Helm.app" "$staging"; then
+        echo "Could not write to $(dirname "$dest")." >&2
+        rm -rf "$staging"
+        exit 1
+    fi
+    # Copying out of a quarantined image carries the flag onto the copy; that
+    # is the single thing standing between the user and a launchable app.
+    xattr -dr com.apple.quarantine "$staging" 2>/dev/null || true
+    rm -rf "$dest"
+    mv "$staging" "$dest"
+
+    echo "Helm is installed."
+    echo "Open it from Launchpad, or: open -a Helm"
+}
+
+uninstall_macos() {
+    removed=""
+    for dest in "/Applications/Helm.app" "$HOME/Applications/Helm.app"; do
+        # Only claim a bundle that is actually Helm; /Applications is shared.
+        if [ -d "$dest" ] &&
+            [ "$(defaults read "$dest/Contents/Info" CFBundleIdentifier 2>/dev/null || true)" = "$bundle_identifier" ]; then
+            rm -rf "$dest"
+            removed="yes"
+        fi
+    done
+    if [ -z "$removed" ]; then
+        echo "Helm is not installed in /Applications or ~/Applications." >&2
+        exit 1
+    fi
+    echo "Helm is uninstalled. Projects and settings remain in ~/.helm."
 }
 
 uninstall() {

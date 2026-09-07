@@ -6,17 +6,20 @@ and keeps projects, sessions, transcripts on your machine.
 
 ## Install
 
-On macOS, [download the signed `.dmg`](https://github.com/vverma022/helm). It updates itself.
-
-On Linux:
+On macOS and Linux:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/vverma022/helm/main/website/public/install.sh | sh
+curl -fsSL https://helm.vverma.in/install.sh | sh
 ```
 
-The script installs into `~/.local` without root. See
-[docs/linux.md](docs/linux.md) for requirements, manual installation, and
-uninstalling.
+The script needs no root. On macOS it installs into `/Applications`; on Linux,
+into `~/.local`. See [docs/linux.md](docs/linux.md) for Linux requirements,
+manual installation, and uninstalling.
+
+The macOS [`.dmg`](https://github.com/vverma022/helm/releases/latest) is signed
+but not yet notarized by Apple, so macOS 15 and later refuse to open it by hand
+— use the command above, which verifies the bundle and installs it. Either way
+the app updates itself from then on.
 
 On Windows, run `Helm-<version>-<arch>-Setup.exe` from the
 [latest release](https://github.com/vverma022/helm/releases/latest). It installs

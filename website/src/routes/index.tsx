@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { Menu } from '@base-ui/react/menu'
 import {
@@ -10,6 +10,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { InstallCommand } from '@/components/install-command'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import {
@@ -19,7 +20,6 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 import {
-  FALLBACK_DOWNLOAD_URL,
   WINDOWS_ARCHITECTURES,
   releaseQuery,
   windowsInstallerUrl,
@@ -78,7 +78,7 @@ const FEATURES = [
   {
     icon: Download,
     title: 'Quietly current',
-    body: 'Signed, notarised and updated with binary deltas in the background. The app stays fresh without asking for your attention.',
+    body: 'Signed updates land as binary deltas in the background, verified against a pinned key. The app stays fresh without asking for your attention.',
   },
 ]
 
@@ -97,6 +97,10 @@ const FAQ = [
     a: 'On your machine. Projects, sessions, transcripts and provider session IDs are stored locally. There is no Helm account and no telemetry.',
   },
   {
+    q: 'macOS says Helm is damaged. What do I do?',
+    a: 'Run the install command above instead of opening the .dmg by hand. Helm is signed but not yet notarised by Apple, and since macOS 15 Gatekeeper blocks any un-notarised download outright — the old right-click \u2192 Open trick no longer works. The installer verifies the bundle, puts it in /Applications and clears the download flag for you. Notarisation is coming; this step disappears with it.',
+  },
+  {
     q: 'What is planned next?',
     a: 'A mobile app for driving sessions remotely, and support for cloud agents.',
   },
@@ -111,7 +115,6 @@ function Eyebrow({ children }: { children: ReactNode }) {
 }
 
 function DownloadMenu({
-  downloadUrl,
   version,
   size,
   align,
@@ -119,7 +122,6 @@ function DownloadMenu({
   showIcon = false,
   variant = 'default',
 }: {
-  downloadUrl: string
   version?: string
   size: 'sm' | 'lg'
   align: 'start' | 'end' | 'center'
@@ -146,13 +148,13 @@ function DownloadMenu({
           className="isolate z-50"
         >
           <Menu.Popup className="min-w-52 origin-(--transform-origin) rounded-lg border bg-popover p-1 text-popover-foreground shadow-md outline-none data-[side=bottom]:slide-in-from-top-1 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95">
-            <Menu.LinkItem
-              href={downloadUrl}
+            <Menu.Item
               closeOnClick
               className={itemClassName}
+              render={<Link to="/install/mac" />}
             >
               macOS (Apple Silicon)
-            </Menu.LinkItem>
+            </Menu.Item>
             <Menu.LinkItem
               href={LINUX_DOCS_URL}
               target="_blank"
@@ -183,19 +185,13 @@ function DownloadMenu({
 
 function Home() {
   const { data: release } = useQuery(releaseQuery)
-  const downloadUrl = release?.url ?? FALLBACK_DOWNLOAD_URL
 
   return (
     <div className="min-h-dvh antialiased">
       <SiteHeader
         repoUrl={REPO_URL}
         action={
-          <DownloadMenu
-            downloadUrl={downloadUrl}
-            version={release?.version}
-            size="sm"
-            align="end"
-          />
+          <DownloadMenu version={release?.version} size="sm" align="end" />
         }
       />
 
@@ -232,7 +228,6 @@ function Home() {
               style={{ animationDelay: '210ms' }}
             >
               <DownloadMenu
-                downloadUrl={downloadUrl}
                 version={release?.version}
                 size="lg"
                 className="h-11 px-5"
@@ -250,9 +245,19 @@ function Home() {
               </a>
             </div>
 
+            <div
+              className="rise mt-5 flex flex-col items-center gap-2"
+              style={{ animationDelay: '250ms' }}
+            >
+              <InstallCommand />
+              <p className="text-xs text-muted-foreground">
+                macOS and Linux. Windows ships an installer.
+              </p>
+            </div>
+
             <p
               className="rise mt-4 font-mono text-xs text-muted-foreground"
-              style={{ animationDelay: '260ms' }}
+              style={{ animationDelay: '290ms' }}
             >
               {release
                 ? `v${release.version} · free and open source`
