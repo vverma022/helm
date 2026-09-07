@@ -462,7 +462,17 @@ try {
   await rm(outputPath, { force: true });
 
   logStep(`Creating the styled DMG at ${outputPath}`);
-  await $`create-dmg --volname ${volumeName} --window-pos 200 120 --window-size 660 400 --text-size 13 --icon-size 128 --icon ${`${appName}.app`} 180 178 --hide-extension ${`${appName}.app`} --app-drop-link 480 178 --filesystem APFS --format ULFO --no-internet-enable --overwrite ${outputPath} ${stagingDirectory}`;
+  // An ad-hoc build cannot be opened by double-click on macOS 15+, so its
+  // window carries the Gatekeeper walkthrough as the background and is made
+  // taller to fit it. A notarized build opens normally and gets the plain
+  // window, which is also what drops the "not yet notarised" wording once a
+  // Developer ID is configured.
+  if (adhoc) {
+    const background = join(projectRoot, "resources", "dmg-background.tiff");
+    await $`create-dmg --volname ${volumeName} --background ${background} --window-pos 200 120 --window-size 660 540 --text-size 13 --icon-size 128 --icon ${`${appName}.app`} 180 170 --hide-extension ${`${appName}.app`} --app-drop-link 480 170 --filesystem APFS --format ULFO --no-internet-enable --overwrite ${outputPath} ${stagingDirectory}`;
+  } else {
+    await $`create-dmg --volname ${volumeName} --window-pos 200 120 --window-size 660 400 --text-size 13 --icon-size 128 --icon ${`${appName}.app`} 180 178 --hide-extension ${`${appName}.app`} --app-drop-link 480 178 --filesystem APFS --format ULFO --no-internet-enable --overwrite ${outputPath} ${stagingDirectory}`;
+  }
 
   logStep(adhoc ? "Ad-hoc signing the DMG" : "Signing the DMG");
   if (adhoc) {
