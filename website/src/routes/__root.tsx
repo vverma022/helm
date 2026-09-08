@@ -93,6 +93,18 @@ export const Route = createRootRouteWithContext<{
         // the default; an explicit choice in localStorage wins over it.
         children: `try{var d=document.documentElement,t=localStorage.getItem('helm-theme');d.classList.toggle('dark',t!=='light');d.style.colorScheme=t==='light'?'light':'dark'}catch(e){document.documentElement.classList.add('dark')}`,
       },
+      ...(import.meta.env.PROD
+        ? [
+            {
+              // The token is public by design; the PROD guard is what keeps
+              // `vite dev` traffic out of the numbers.
+              type: 'module',
+              src: 'https://static.cloudflareinsights.com/beacon.min.js',
+              'data-cf-beacon':
+                '{"token": "1823c71ef979450681900d0682f8131d"}',
+            },
+          ]
+        : []),
     ],
   }),
   component: RootComponent,
